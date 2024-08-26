@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #008080;
+        }
+        .container-casesearch {
+            max-width: 600px;
+            width: 100%;
+            padding: 20px;
+            border: 1px solid #ccc;
+            height: 50vh;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align:center;
+
+        }
+        .container-casesearch label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .container-casesearch select,
+        .container-casesearch button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .d-grid {
+            display: grid;
+            margin: 20px;
+        }
+
+    </style>
+
+</head>
+<body>
+<div class="container-casesearch">
+    <form action="{% url 'process_input' %}" method="POST" onsubmit="return validateCaptcha()">
+        {% csrf_token %}
+        <div class="casetype-container">
+            <label for="caseType">Case Type:</label>
+            <select class="form-select" id="caseType" name="caseType" required>
+              <option value="">--Select any one--</option>
+              <option value="All">All</option>
+              <option value="Insurer">Insurer</option>
+              <option value="Trust">Trust</option>
+            </select>
+        </div>
+        <div class="scheme-container">
+            <label for="Scheme">Scheme:</label>
+            <select class="form-select" id="Scheme" name="Scheme" required>
+                <option value="-1">--Select Scheme--</option>
+                <option value="PMJ">AB-PMJAY(PMJ)</option>
+                <option value="R">AB-PMJAY(R)</option>
+                <option value="P">DKBSBY(P)</option>
+                <option value="M">DKBSBY(M)</option>
+                <option value="CK">AB-PMJAY (CK)</option>
+                <option value="MVSSY">AB-PMJAY (MVSSY)</option>
+                <option value="NP">AB-PMJAY (NP)</option>
+                <option value="PORT">AB-PMJAY (PORT)</option>
+                <option value="CB">AB-PMJAY (CB)</option>
+                <option value="TELE">AB-PMJAY (TELE)</option>
+                <option value="PVTG">AB-PMJAY(PVTG)</option>
+                <option value="S">AB-PMJAY(S)</option>
+            </select>
+        </div>
+        <div class="record-period">
+            <label for="recordPeriod">Record Period:</label>
+            <select class="form-select" id="recordPeriod" name="recordPeriod" required>
+                <option value="-1">--Select--</option>
+                <option value="90">Last 3 Months</option>
+                <option value="180">Last 6 Months</option>
+                <option value="365">Last 1 Year</option>
+            </select>
+        </div>
+        <div class="captcha">
+            <img src="{{ MEDIA_URL }}captchas/captcha_image.jpg" alt="Captcha Image" style="width: 127px;">
+
+            <input type="text" id="captchaInput" name="captchaInput" required>
+<!--            <input class="form-control login-wrap" type="text" placeholder="Enter captcha" name="captchaInput" id="captchaInput" required autocomplete="off">-->
+        </div>
+
+    <div class="d-grid gap-2 d-md-block">
+        <button class="btn btn-primary" type="submit">Search & Download</button>
+    </div>
+    <!--    <div class="d-grid gap-2 d-md-block">-->
+    <!--        <button class="btn btn-primary" type="button">Upload & Update</button>-->
+    <!--    </div>-->
+    </form>
+</div>
+</body>
+   <script>
+
+    const caseTypeSelect = document.getElementById('caseType');
+        const schemeSelect = document.getElementById('Scheme');
+        const recordSelect = document.getElementById('recordPeriod');
+        function validateCaptcha() {
+            const captchaInput = document.getElementById('captchaInput').value;
+
+            if (captchaInput === "") {
+                alert("Please enter the captcha.");
+                return false;
+            }
+
+            // Assuming that you'll handle further captcha validation server-side
+            return true;
+        }
+
+
+        function validateForm() {
+            if (caseTypeSelect.value === "") {
+                alert("Please select a case type.");
+                return false;
+            }
+            else if(schemeSelect.value === ""){
+                alert("Please select a scheme.");
+                return false;
+            }
+            else if(recordSelect === ""){
+                alert("Please select a record.");
+                return false;
+            }
+            else{
+            return true;
+            }
+        }
+   </script>
+</html>
