@@ -53,7 +53,7 @@ def initialize_driver():
     # Set the download directory
     prefs = {"download.default_directory": download_dir}
     chrome_options.add_experimental_option("prefs", prefs)
-
+    #
     # Add headless mode if desired
     chrome_options.add_argument("--headless")
     # chrome_options.add_argument("--disable-gpu")
@@ -204,3 +204,9 @@ def close_driver(driver):
     time.sleep(10)
     driver.quit()
 
+def input_case_type_again(driver,case_type):
+    Casetype = driver.find_element(By.ID, "select2-caseType-container")
+    Casetype.click()
+    time.sleep(2)
+    input_element = driver.find_element(By.CSS_SELECTOR, ".select2-search__field")
+    input_element.send_keys(case_type, Keys.ENTER)

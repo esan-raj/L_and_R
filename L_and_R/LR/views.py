@@ -13,9 +13,47 @@ from django.db import transaction
 from django.contrib.sessions.exceptions import SessionInterrupted
 from django.db import transaction
 from django.contrib.sessions.models import Session
+from selenium.common.exceptions import WebDriverException, NoSuchElementException, TimeoutException
 
 
-driver = initialize_driver()
+
+
+
+# Singleton pattern for WebDriver
+class WebDriverSingleton:
+    _instance = None
+
+    @classmethod
+    def get_instance(cls):
+        """
+        Returns a singleton instance of the WebDriver.
+        Reinitializes the WebDriver if the session is stale or has been closed.
+        """
+        if cls._instance is None:
+            cls._instance = initialize_driver()
+        else:
+            try:
+                # Check if the current WebDriver session is still active
+                cls._instance.current_url
+            except (WebDriverException, AttributeError):
+                # If the session is stale or WebDriverException occurs, reinitialize the WebDriver
+                cls.quit_instance()
+                cls._instance = initialize_driver()
+        return cls._instance
+
+    @classmethod
+    def quit_instance(cls):
+        """
+        Closes the WebDriver instance if it exists and sets the instance to None.
+        Handles any exceptions that occur during the shutdown.
+        """
+        if cls._instance is not None:
+            try:
+                close_driver(cls._instance)
+            except WebDriverException as e:
+                print(f"Error closing WebDriver: {e}")
+            finally:
+                cls._instance = None
 
 
 def register(request):
@@ -43,6 +81,7 @@ def login_view(request):
                 # Store user information in the session
                 request.session['app_username'] = app_username
                 request.session['user_id'] = user.id
+                driver = WebDriverSingleton.get_instance()
                 # Redirect to the dashboard page
                 return redirect('dashboard')
             else:
@@ -78,6 +117,7 @@ def download_data(request):
         if not site_username or not site_password:
             return HttpResponse("Site credentials not found or invalid.")
 
+        driver = WebDriverSingleton.get_instance()
         # Start the WebDriver process
         login_site(driver, site_username, site_password)
 
@@ -126,13 +166,13 @@ def process_input(request):
         scheme = request.POST.get('Scheme')
         record = request.POST.get('recordPeriod')
         captcha = request.POST.get('captchaInput')
-
+        driver = WebDriverSingleton.get_instance()
         captcha_solve(driver, captcha)
         input_case_type(driver, case_type)
         input_scheme(driver, scheme)
         input_period(driver, record)
         status = download_excel(driver, scheme)
-        close_driver(driver)
+        # close_driver(driver)
 
         if status == "no_records":
             message = "No records found."
@@ -162,3 +202,33 @@ def update_app_password(request):
 def update_site_password(request):
     # Your logic for updating the site password
     return render(request, 'LR/update_site_password.html')
+
+def download_again(request):
+    return render(request,'LR/form2.html')
+
+def process(request):
+    if request.method == 'POST':
+        case_type = request.POST.get('caseType')
+        scheme = request.POST.get('Scheme')
+        record = request.POST.get('recordPeriod')
+        # captcha = request.POST.get('captchaInput')
+        driver = WebDriverSingleton.get_instance()
+        # captcha_solve(driver, captcha)
+        input_case_type_again(driver, case_type)
+        input_scheme(driver, scheme)
+        input_period(driver, record)
+        status = download_excel(driver, scheme)
+        if status == "no_records":
+            message = "No records found."
+        elif status == "error":
+            message = "An error occurred during processing."
+        else:
+            message = "File downloaded successfully."
+
+        return render(request, 'LR/Success.html', {'message': message})
+
+def close(request):
+    driver = WebDriverSingleton.get_instance()
+    close_driver(driver)
+    return render(request,'LR/logout.html')
+

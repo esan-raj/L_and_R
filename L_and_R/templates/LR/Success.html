@@ -2,8 +2,35 @@
 <html>
 <head>
     <title>Process Result</title>
+    <style>
+        .download-again-btn .logout-btn {
+    background-color: #4CAF50; /* Green background */
+    color: white; /* White text */
+    padding: 10px 20px; /* Padding */
+    font-size: 16px; /* Font size */
+    border: none; /* Remove border */
+    border-radius: 5px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+
+.download-again-btn:hover {
+    background-color: #45a049; /* Darker green on hover */
+}
+
+    </style>
 </head>
 <body>
     <h1>{{ message }}</h1>
+    <form action="{% url 'download_again' %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="download-again-btn">For Download Again</button>
+    </form>
+    <form action="{% url 'close' %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="logout-btn">Logout</button>
+    </form>
+
+
 </body>
 </html>

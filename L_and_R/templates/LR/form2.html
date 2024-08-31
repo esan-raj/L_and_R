@@ -81,7 +81,7 @@
 </head>
 <body>
 <div class="container-casesearch">
-    <form action="{% url 'process_input' %}" method="POST" onsubmit="return validateCaptcha()">
+    <form action="{% url 'process' %}" method="POST" onsubmit="return validateCaptcha()">
         {% csrf_token %}
         <div class="casetype-container">
             <label for="caseType">Case Type:</label>
@@ -119,10 +119,10 @@
                 <option value="365">Last 1 Year</option>
             </select>
         </div>
-        <div class="captcha">
-            <img src="{{ MEDIA_URL }}captchas/captcha_image.jpg" alt="Captcha Image" style="width: 127px;">
-            <input type="text" id="captchaInput" name="captchaInput" required>
-        </div>
+<!--        <div class="captcha">-->
+<!--            <img src="{{ MEDIA_URL }}captchas/captcha_image.jpg" alt="Captcha Image" style="width: 127px;">-->
+<!--            <input type="text" id="captchaInput" name="captchaInput" required>-->
+<!--        </div>-->
         <div class="d-grid gap-2 d-md-block">
             <button id="downloadButton" class="btn btn-primary" type="submit">Search & Download</button>
         </div>

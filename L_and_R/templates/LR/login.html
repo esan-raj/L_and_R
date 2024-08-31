@@ -95,6 +95,32 @@
         .text-new-user{
         text-align: center; /* Center the content */
         }
+        .loader {
+            display: none;
+            border: 8px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 8px solid #3498db;
+            width: 60px;
+            height: 60px;
+            -webkit-animation: spin 2s linear infinite;
+            animation: spin 2s linear infinite;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+
+        /* Add animation to the loader */
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -103,7 +129,7 @@
     {% if error %}
         <p style="color:red;">{{ error }}</p>
     {% endif %}
-    <form method="post" action = "{% url 'login' %}">
+    <form id="loginForm" method="post" action = "{% url 'login' %}">
         {% csrf_token %}
         <label for="app_username">Username:</label>
         <input type="text" name="app_username" required><br>
@@ -115,6 +141,15 @@
         </div>
         <button type="button" onclick="window.location.href='{% url 'register' %}';">Register</button>
     </form>
+
+    <div id="loader" class="loader"></div>
     </div>
+<script>
+    document.getElementById("loginForm").addEventListener("submit", function() {
+    // Show the loader when the form is submitted
+    document.getElementById("loader").style.display = "block";
+});
+
+</script>
 </body>
 </html>
