@@ -1,28 +1,58 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login</title>
+{% extends 'LR/base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+    <div class="main-container">
+        <div class="login-container">
+            <h2>Login</h2>
+            {% if error %}
+                <p style="color:red;">{{ error }}</p>
+            {% endif %}
+            <form id="loginForm" method="post" action="{% url 'login' %}">
+                {% csrf_token %}
+                <label for="app_username">Username:</label>
+                <input type="text" name="app_username" required><br>
+                <label for="app_password">Password:</label>
+                <input type="password" name="app_password" required><br>
+                <button type="submit">Login</button>
+                <div class="text-new-user">
+                    <h5>New User?</h5>
+                </div>
+                <button type="button" onclick="window.location.href='{% url 'register' %}';">Register</button>
+            </form>
+
+            <div id="loader" class="loader"></div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_styles %}
     <style>
-        body {
-            font-family: sans-serif;
+        /* Isolate login styles by applying them only within the main container */
+        .main-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            background-color: #008080;
+            min-height: calc(100vh - 160px); /* Ensures header and footer are not impacted */
+            padding-top: 50px;
+            padding-bottom: 10px;
+            background-color: #FFF;
         }
 
         .login-container {
-            display:flex;
+            display: flex;
             flex-direction: column;
             align-items: center;
             background-color: #fff;
             padding: 30px;
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px; /* Restrict the width to avoid header issues */
         }
 
-        h1 {
+        h2 {
             text-align: center;
             margin-bottom: 20px;
         }
@@ -30,10 +60,12 @@
         form {
             display: flex;
             flex-direction: column;
+            width: 100%;
         }
 
         label {
             margin-bottom: 5px;
+            font-weight: bold;
         }
 
         input[type="text"],
@@ -42,10 +74,13 @@
             border: 1px solid #ccc;
             border-radius: 3px;
             margin-bottom: 15px;
+            width: 100%;
         }
 
-        button[type="submit"] {
-            background-color: #4CAF50;
+        /* Button Styles */
+        button[type="submit"],
+        button[type="button"] {
+            background-color: #D4AF37; /* Gold */
             border: none;
             color: white;
             padding: 15px 32px;
@@ -54,47 +89,33 @@
             display: inline-block;
             font-size: 16px;
             border-radius: 8px;
-              /* 3D effects */
-              box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2), 0px 2px 2px rgba(0, 0, 0, 0.2);
-              transform: translateY(-5px); /* Lift the button slightly */
-              transition: transform 0.5s ease-in-out;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2), 0px 2px 2px rgba(0, 0, 0, 0.2);
+            transform: translateY(-5px);
+            transition: transform 0.3s ease-in-out, background-color 0.3s ease-in-out, color 0.3s ease-in-out;
         }
 
-        button[type="submit"]:hover {
-            opacity: 0.8;
+        /* Hover Effect */
+        button[type="submit"]:hover,
+        button[type="button"]:hover {
+            background-color: #C0A080; /* Lighter Gold on Hover */
+            color: black; /* Text color black on hover */
+            font-weight: bold; /* Bold text on hover */
+        }
+
+        /* Click Effect */
+        button[type="submit"]:active,
+        button[type="button"]:active {
+            background-color: #000; /* Turn black on click */
             transform: translateY(0px);
             box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.3);
         }
-        button[type="button"]{
-            margin-top: 2px;
-            background-color: #FF8343;
-            border: none;
-            color: white;
-            padding: 15px 32px;
+
+        .text-new-user {
             text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            border-radius: 8px;
-              /* 3D effects */
-              box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2), 0px 2px 2px rgba(0, 0, 0, 0.2);
-              transform: translateY(-5px); /* Lift the button slightly */
-              transition: transform 0.2s ease-in-out;
-        }
-        button[type="button"]:hover{
-            opacity: 0.8;
-            transform: translateY(0px);
-            box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.3);
-        }
-        a {
-            text-decoration: none;
-            color: #aaa;
-            font-size: 12px;
             margin-top: 10px;
         }
-        .text-new-user{
-        text-align: center; /* Center the content */
-        }
+
+        /* Loader styles */
         .loader {
             display: none;
             border: 8px solid #f3f3f3;
@@ -102,7 +123,6 @@
             border-top: 8px solid #3498db;
             width: 60px;
             height: 60px;
-            -webkit-animation: spin 2s linear infinite;
             animation: spin 2s linear infinite;
             position: fixed;
             top: 50%;
@@ -111,45 +131,18 @@
             z-index: 1000;
         }
 
-        /* Add animation to the loader */
-        @-webkit-keyframes spin {
-            0% { -webkit-transform: rotate(0deg); }
-            100% { -webkit-transform: rotate(360deg); }
-        }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
     </style>
-</head>
-<body>
-<div class ="login-container">
-    <h2>Login</h2>
-    {% if error %}
-        <p style="color:red;">{{ error }}</p>
-    {% endif %}
-    <form id="loginForm" method="post" action = "{% url 'login' %}">
-        {% csrf_token %}
-        <label for="app_username">Username:</label>
-        <input type="text" name="app_username" required><br>
-        <label for="app_password">Password:</label>
-        <input type="password" name="app_password" required><br>
-        <button type="submit">Login</button>
-        <div class="text-new-user">
-            <h5>New User?</h5>
-        </div>
-        <button type="button" onclick="window.location.href='{% url 'register' %}';">Register</button>
-    </form>
+{% endblock %}
 
-    <div id="loader" class="loader"></div>
-    </div>
-<script>
-    document.getElementById("loginForm").addEventListener("submit", function() {
-    // Show the loader when the form is submitted
-    document.getElementById("loader").style.display = "block";
-});
-
-</script>
-</body>
-</html>
+{% block extra_scripts %}
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", function() {
+            document.getElementById("loader").style.display = "block";
+        });
+    </script>
+{% endblock %}

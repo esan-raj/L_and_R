@@ -93,7 +93,7 @@ def login_view(request):
             return redirect('register')
 
     # If it's a GET request, simply render the login page
-    return render(request, 'LR/login.html')
+    return render(request, 'LR/login.html' )
 
 def dashboard_view(request):
     app_username = request.session.get('app_username')

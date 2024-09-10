@@ -16,9 +16,9 @@ class AppUser(models.Model):
 
     objects = models.Manager()
 
-# class DynamicExcelData(models.Model):
-#     data = models.JSONField()  # Store the data dynamically
-#     uploaded_at = models.DateTimeField(auto_now_add=True)
+class DynamicExcelData(models.Model):
+    data = models.JSONField()  # Store the data dynamically
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.app_username
