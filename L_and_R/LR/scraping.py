@@ -40,9 +40,10 @@ def fetch_site_password(app_username):
         return None
 
 
-download_dir = r'D:\practice_project\L&R_redesign\Downloaded_documents'
+download_dir = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
 def initialize_driver():
-    driver_path = r'C:\Users\Esan Raj\Downloads\chromedriver-win64\chromedriver-win64\chromedriver.exe'
+    base_dir = os.path.dirname(os.path.abspath(__file__))  # Get the directory of the current file
+    driver_path = os.path.join(base_dir, 'drivers', 'chromedriver.exe')
     service = Service(driver_path)
 
     # Specify the directory where you want to save the downloaded Excel files
@@ -162,7 +163,7 @@ def input_period(driver,record):
 
 
 def download_excel(driver, scheme):
-    base_directory = r"D:\practice_project\L&R_redesign\Downloaded_documents"
+    base_directory = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Create a subdirectory with the scheme name if it doesn't exist
@@ -200,7 +201,7 @@ def download_excel(driver, scheme):
         print(f"Excel file for {scheme} downloaded and saved to {new_file_name}")
 
         # Process the Excel file and upload its contents to the database
-        process_excel_file_and_upload(new_file_name, scheme)
+        # process_excel_file_and_upload(new_file_name, scheme)
 
         return "success"  # Return success status
 

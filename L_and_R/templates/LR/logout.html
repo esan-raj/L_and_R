@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'LR/base.html' %}
 
 {% block title %}Logged Out{% endblock %}
 
@@ -33,21 +33,28 @@
 
 {% block extra_scripts %}
     <script>
-        // Initialize countdown timer
-        var countdown = 10; // Set timer to 10 seconds
-        var timerElement = document.getElementById('timer');
+        document.addEventListener("DOMContentLoaded", function() {
+            var countdown = 10; // Set timer to 10 seconds
+            var timerElement = document.getElementById('timer');
 
-        function updateCountdown() {
-            timerElement.textContent = countdown;
-            countdown--;
+            function updateCountdown() {
+                if (countdown >= 0) {
+                    timerElement.textContent = countdown;
+                    countdown--;
+                }
 
-            // Redirect to the login page after countdown ends
-            if (countdown < 0) {
-                window.location.href = "{% url 'login' %}"; // Replace with your login URL
+                // Redirect to the login page after countdown ends
+                if (countdown < 0) {
+                    clearInterval(timerInterval); // Clear the interval
+                    window.location.href = "{% url 'login' %}"; // Redirect to login page
+                }
             }
-        }
 
-        // Run the updateCountdown function every 1 second
-        setInterval(updateCountdown, 1000);
+            // Run the updateCountdown function every 1 second
+            var timerInterval = setInterval(updateCountdown, 1000);
+
+            // Debugging output
+            console.log('Countdown started. Timer interval set.');
+        });
     </script>
 {% endblock %}
