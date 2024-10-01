@@ -1,7 +1,11 @@
 {% extends 'LR/base.html' %}
 
 {% block title %}Form Title{% endblock %}
-
+{% block navbar_items %}
+    <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+    <li><a href="{% url 'profile' %}">Profile</a></li>
+    <li><a href="{% url 'close' %}">Logout</a></li>
+{% endblock %}
 {% block content %}
     <div class="container-casesearch">
         <form action="{% url 'process' %}" method="POST" onsubmit="return validateCaptcha()">
@@ -33,6 +37,19 @@
                     <option value="S">AB-PMJAY(S)</option>
                 </select>
             </div>
+
+            <div class="date-input-container">
+                <div class="col-md-3">
+                    <label>From Date</label>
+                    <input type="text" id="advFromDate" name="advFromDate" class="form-control" placeholder="dd/mm/yyyy">
+                </div>
+                <div class="col-md-3">
+                    <label>To Date</label>
+                    <input type="text" id="advToDate" name="advToDate" class="form-control" placeholder="dd/mm/yyyy">
+                </div>
+            </div>
+
+
             <div class="record-period">
                 <label for="recordPeriod">Record Period:</label>
                 <select class="form-select" id="recordPeriod" name="recordPeriod" required>
@@ -60,87 +77,121 @@
 {% endblock %}
 
 {% block extra_styles %}
-    <style>
-        .container-casesearch {
-            max-width: 600px;
-            width: 100%;
-            padding: 20px;
-            border: 1px solid #ccc;
-            height: 50vh;
-            border-radius: 10px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+<!--    /* Center the form container */-->
+<!--    html, body {-->
+<!--        height: 100%;-->
+<!--        margin: 0;-->
+<!--    }-->
 
-        .container-casesearch label {
-            display: block;
-            margin-bottom: 5px;
-        }
+<!--    body {-->
+<!--        display: flex;-->
+<!--        justify-content: center;-->
+<!--        align-items: center;-->
+<!--        background-color: #f5f5f5;-->
+<!--    }-->
 
-        .container-casesearch select,
-        .container-casesearch button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-        }
+    .container-casesearch {
+        max-width: 600px;
+        width: 100%;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        background-color: #fff;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2); /* More prominent shadow for depth */
+        text-align: center;
+    }
 
-        .btn {
-            padding: 10px 20px;
-            font-size: 1em;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+    /* Style for input containers and buttons */
+    .date-input-container, .casetype-container, .scheme-container, .record-period, .captcha {
+        margin-bottom: 20px; /* Consistent spacing */
+    }
 
-        .btn-primary {
-            background-color: #007bff;
-            color: #fff;
-        }
+    .form-select, input[type='text'] {
+        width: 100%; /* Full width inputs */
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        background-color: #f8f8f8; /* Slightly off-white background for inputs */
+    }
 
-        .d-grid {
-            display: grid;
-            margin: 20px;
-        }
+    .btn-primary {
+        background-color: #007bff; /* Bootstrap primary color */
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px; /* Larger font size */
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,123,255,0.3); /* Matching color shadow */
+        cursor: pointer;
+    }
 
-        /* Progress bar container */
-        .progress-container {
-            width: 100%;
-            background-color: #f3f3f3;
-            margin-top: 20px;
-            height: 30px;
-            border-radius: 5px;
-            overflow: hidden;
-            display: none; /* Initially hidden */
-        }
+    .btn-primary:hover {
+        background-color: #0056b3; /* Darker shade on hover */
+    }
 
-        /* Progress bar */
-        .progress-bar {
-            height: 100%;
-            width: 0;
-            background-color: #4caf50;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            transition: width 0.4s ease;
-        }
-    </style>
+    .progress-container {
+        width: 100%;
+        background-color: #e9ecef; /* Light grey background */
+        border-radius: 5px; /* Rounded corners for progress bar */
+        overflow: hidden; /* Ensures no spill outside the border */
+    }
+
+    .progress-bar {
+        height: 100%;
+        width: 0;
+        background-color: #28a745; /* Green progress */
+        transition: width 0.4s ease; /* Smooth transition */
+    }
+</style>
 {% endblock %}
 
+
 {% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         // Validate captcha input
-        function validateCaptcha() {
-            const captchaInput = document.getElementById('captchaInput')?.value || '';
-            if (captchaInput === "") {
-                alert("Please enter the captcha.");
-                return false;
-            }
-            return true;
-        }
+<!--        function validateCaptcha() {-->
+<!--            const captchaInput = document.getElementById('captchaInput')?.value || '';-->
+<!--            if (captchaInput === "") {-->
+<!--                alert("Please enter the captcha.");-->
+<!--                return false;-->
+<!--            }-->
+<!--            return true;-->
+<!--        }-->
+        flatpickr("#advFromDate", {
+            dateFormat: "d/m/Y",  // Set format to dd/mm/yyyy
+        });
 
+        flatpickr("#advToDate", {
+            dateFormat: "d/m/Y",  // Set format to dd/mm/yyyy
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const recordPeriod = document.getElementById('recordPeriod');
+            const fromDate = document.getElementById('advFromDate');
+            const toDate = document.getElementById('advToDate');
+
+            // Function to enable/disable Record Period based on date fields
+            function toggleRecordPeriod() {
+                if (fromDate.value && toDate.value) {
+                    recordPeriod.disabled = true;
+                } else {
+                    recordPeriod.disabled = false;
+                }
+            }
+
+            // Attach event listeners to the date inputs
+            fromDate.addEventListener('input', toggleRecordPeriod);
+            toDate.addEventListener('input', toggleRecordPeriod);
+
+            // Attach event listener to the Record Period dropdown to disable date fields if selected
+            recordPeriod.addEventListener('change', function () {
+                const isRecordPeriodSelected = recordPeriod.value !== "";
+                fromDate.disabled = isRecordPeriodSelected;
+                toDate.disabled = isRecordPeriodSelected;
+            });
+        });
         document.getElementById("downloadButton")?.addEventListener("click", function(event) {
             document.querySelector(".progress-container").style.display = "block";
             let progressBar = document.getElementById("progressBar");

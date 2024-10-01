@@ -1,11 +1,17 @@
 {% extends 'LR/base.html' %}
 
 {% block title %}Form Title{% endblock %}
-
+{% block navbar_items %}
+    <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+    <li><a href="{% url 'profile' %}">Profile</a></li>
+    <li><a href="{% url 'close' %}">Logout</a></li>
+{% endblock %}
 {% block content %}
     <div class="container-casesearch">
-        <form action="{% url 'process_input' %}" method="POST" onsubmit="return validateCaptcha()">
+        <form action="{% url 'process_input' %}" method="POST" onsubmit="return validateForm()">
             {% csrf_token %}
+            <!-- Form Elements -->
+            <!-- Case Type Dropdown -->
             <div class="casetype-container">
                 <label for="caseType">Case Type:</label>
                 <select class="form-select" id="caseType" name="caseType" required>
@@ -15,6 +21,8 @@
                     <option value="Trust">Trust</option>
                 </select>
             </div>
+
+            <!-- Scheme Dropdown -->
             <div class="scheme-container">
                 <label for="Scheme">Scheme:</label>
                 <select class="form-select" id="Scheme" name="Scheme" required>
@@ -33,15 +41,31 @@
                     <option value="S">AB-PMJAY(S)</option>
                 </select>
             </div>
+
+            <!-- Date Inputs -->
+            <div class="date-input-container">
+                <div class="col-md-3">
+                    <label>From Date</label>
+                    <input type="text" id="advFromDate" name="advFromDate" class="form-control" placeholder="dd/mm/yyyy">
+                </div>
+                <div class="col-md-3">
+                    <label>To Date</label>
+                    <input type="text" id="advToDate" name="advToDate" class="form-control" placeholder="dd/mm/yyyy">
+                </div>
+            </div>
+
+            <!-- Record Period Dropdown -->
             <div class="record-period">
                 <label for="recordPeriod">Record Period:</label>
-                <select class="form-select" id="recordPeriod" name="recordPeriod" required>
-                    <option value="-1">--Select--</option>
+                <select class="form-select" id="recordPeriod" name="recordPeriod">
+                    <option value="">--Select--</option>
                     <option value="90">Last 3 Months</option>
                     <option value="180">Last 6 Months</option>
                     <option value="365">Last 1 Year</option>
                 </select>
             </div>
+
+            <!-- Captcha and Submit -->
             <div class="captcha">
                 <img src="{{ MEDIA_URL }}captchas/captcha_image.jpg" alt="Captcha Image" style="width: 127px;">
                 <input type="text" id="captchaInput" name="captchaInput" required>
@@ -49,6 +73,8 @@
             <div class="d-grid gap-2 d-md-block">
                 <button id="downloadButton" class="btn btn-primary" type="submit">Search & Download</button>
             </div>
+
+            <!-- Progress Bar -->
             <div class="progress-container">
                 <div id="progressBar" class="progress-bar">0%</div>
             </div>
@@ -57,61 +83,53 @@
 {% endblock %}
 
 {% block extra_styles %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
+<!--        .flatpickr-months{-->
+<!--            width:100px;-->
+<!--            height:100px;-->
+<!--        }-->
+        /* Scoping form-specific styles */
         .container-casesearch {
             max-width: 600px;
             width: 100%;
             padding: 20px;
             border: 1px solid #ccc;
-            height: 50vh;
             border-radius: 10px;
             background-color: #fff;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             text-align: center;
+            margin: 0 auto;
         }
 
-        .container-casesearch label {
-            display: block;
-            margin-bottom: 5px;
+        /* Ensuring no conflict with global reset */
+        .container-casesearch * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .container-casesearch select,
-        .container-casesearch button {
-            width: 100%;
-            padding: 10px;
+        /* Form specific layout */
+        .date-input-container {
+            display: flex;
+            justify-content: space-between;
             margin-bottom: 15px;
         }
 
-        .btn {
-            padding: 10px 20px;
-            font-size: 1em;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+        .col-md-3 {
+            width: 48%;
         }
 
-        .btn-primary {
-            background-color: #007bff;
-            color: #fff;
-        }
-
-        .d-grid {
-            display: grid;
-            margin: 20px;
-        }
-
-        /* Progress bar container */
+        /* Progress Bar */
         .progress-container {
             width: 100%;
             background-color: #f3f3f3;
             margin-top: 20px;
             height: 30px;
             border-radius: 5px;
-            overflow: hidden;
-            display: none; /* Initially hidden */
+            display: none;
         }
 
-        /* Progress bar */
         .progress-bar {
             height: 100%;
             width: 0;
@@ -123,21 +141,46 @@
             font-weight: bold;
             transition: width 0.4s ease;
         }
+
     </style>
 {% endblock %}
 
 {% block extra_scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
-        // Validate captcha input
-        function validateCaptcha() {
-            const captchaInput = document.getElementById('captchaInput').value;
-            if (captchaInput === "") {
-                alert("Please enter the captcha.");
-                return false;
-            }
-            return true;
-        }
+        flatpickr("#advFromDate", {
+            dateFormat: "d/m/Y",  // Set format to dd/mm/yyyy
+        });
 
+        flatpickr("#advToDate", {
+            dateFormat: "d/m/Y",  // Set format to dd/mm/yyyy
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const recordPeriod = document.getElementById('recordPeriod');
+            const fromDate = document.getElementById('advFromDate');
+            const toDate = document.getElementById('advToDate');
+
+            // Function to enable/disable Record Period based on date fields
+            function toggleRecordPeriod() {
+                if (fromDate.value && toDate.value) {
+                    recordPeriod.disabled = true;
+                } else {
+                    recordPeriod.disabled = false;
+                }
+            }
+
+            // Attach event listeners to the date inputs
+            fromDate.addEventListener('input', toggleRecordPeriod);
+            toDate.addEventListener('input', toggleRecordPeriod);
+
+            // Attach event listener to the Record Period dropdown to disable date fields if selected
+            recordPeriod.addEventListener('change', function () {
+                const isRecordPeriodSelected = recordPeriod.value !== "";
+                fromDate.disabled = isRecordPeriodSelected;
+                toDate.disabled = isRecordPeriodSelected;
+            });
+        });
         document.getElementById("downloadButton")?.addEventListener("click", function(event) {
             document.querySelector(".progress-container").style.display = "block";
             let progressBar = document.getElementById("progressBar");

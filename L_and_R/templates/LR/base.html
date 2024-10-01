@@ -117,10 +117,9 @@ footer {
         </div>
         <nav>
             <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">About</a></li>
-                <li><a href="#">Services</a></li>
-                <li><a href="#">Contact</a></li>
+                {% block navbar_items %}
+
+                {% endblock %}
             </ul>
         </nav>
     </header>
@@ -136,7 +135,9 @@ footer {
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2024 Med I Port. All Rights Reserved.</p>
+        <p>&copy; 2024 MediPort. All Rights Reserved.</p>
     </footer>
+    {% block extra_scripts %} {% endblock %}
 </body>
+
 </html>

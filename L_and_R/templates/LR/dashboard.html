@@ -1,6 +1,11 @@
 {% extends 'LR/base.html' %}
 
 {% block title %}Dashboard{% endblock %}
+{% block navbar_items %}
+    <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+    <li><a href="{% url 'profile' %}">Profile</a></li>
+    <li><a href="{% url 'close' %}">Logout</a></li>
+{% endblock %}
 
 {% block content %}
 <style>
@@ -45,37 +50,18 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
-
-    ul {
-        list-style: none;
-        padding: 0;
-    }
-
-    ul li {
-        background-color: #e9ecef;
-        padding: 10px;
-        margin-bottom: 5px;
-        border-radius: 5px; /* Rounded corners */
-    }
 </style>
 
 <div class="container">
     <!--    <h1>Dashboard</h1> -->
-    <div class="button-group">
-        <form method="get" action="{% url 'update_app_password' %}">
-            <button type="submit" class="btn">Update App Password</button>
-        </form>
-        <form method="get" action="{% url 'update_site_password' %}">
-            <button type="submit" class="btn">Update Site Password</button>
-        </form>
-    </div>
+
 
     {% if messages %}
-    <ul>
         {% for message in messages %}
-            <li>{{ message }}</li>
+            <div class="alert {% if message.critical %}alert-danger{% else %}alert-success{% endif %}">
+                <p>{{ message }}</p>
+            </div>
         {% endfor %}
-    </ul>
     {% endif %}
 
     <div class="button-group">
@@ -86,6 +72,23 @@
         <div id="loader" class="loader"></div>
     </div>
 </div>
+
+<style>
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        color: #fff; /* Default text color */
+    }
+
+    .alert-success {
+        background-color: #28a745; /* Green for success */
+    }
+
+    .alert-danger {
+        background-color: #dc3545; /* Red for errors */
+    }
+</style>
 
 <script>
     document.getElementById("DownloadForm").addEventListener("submit", function() {

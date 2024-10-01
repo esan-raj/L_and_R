@@ -3,7 +3,7 @@ import io
 import shutil
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, StaleElementReferenceException, NoSuchElementException
 from PIL import Image
 import os
 from selenium import webdriver
@@ -12,7 +12,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from .models import AppUser,DynamicExcelData
 import pandas as pd
 from django.db import connection # Import the AppUser model
@@ -70,14 +70,33 @@ def initialize_driver():
 
 def login_site(driver,site_username, site_password):
     username_field = driver.find_element(By.NAME, 'username')
+    username_field.clear()
     username_field.send_keys(site_username)
     process = driver.find_element(By.ID, 'proceed')
     process.click()
     time.sleep(10)
-    close_button = driver.find_element(By.CLASS_NAME, 'bootbox-close-button')
-    close_button.click()
+    try:
+        close_button = driver.find_element(By.CLASS_NAME, 'bootbox-close-button')
+        close_button.click()
+    except Exception:
+        pass
     password_field = driver.find_element(By.NAME, 'password')
+    password_field.clear()
     password_field.send_keys(site_password)
+    try:
+        button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.btn.btn-primary.bootbox-accept"))
+        )
+        button.click()
+    except Exception:
+        pass
+    try:
+        close_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.bootbox-close-button.close"))
+        )
+        close_button.click()
+    except Exception:
+        login_site(driver,site_username, site_password)
     captcha_download(driver)
 
 # def navigate_to_form(driver):
@@ -136,7 +155,7 @@ def captcha_solve(driver,captcha):
     except Exception as e:
         pass
 
-def input_case_type(driver, case_type = "All"):
+def input_case_type(driver, case_type):
     iframe = driver.find_element(By.ID, "middleFrame")
     driver.switch_to.frame(iframe)
     # time.sleep(2)
@@ -162,7 +181,7 @@ def input_period(driver,record):
  # Import your model where the data will be stored
 
 
-def download_excel(driver, scheme):
+def download_excel(driver, scheme, record):
     base_directory = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -194,7 +213,7 @@ def download_excel(driver, scheme):
         latest_file = max([os.path.join(base_directory, f) for f in files], key=os.path.getctime)
 
         # Destination path in the scheme-specific subdirectory
-        new_file_name = os.path.join(scheme_directory, f"{scheme}_report{timestamp}.xls")
+        new_file_name = os.path.join(scheme_directory, f"{scheme}_{record}report{timestamp}.xls")
 
         # Move the file to the scheme-specific directory and rename it
         shutil.move(latest_file, new_file_name)
@@ -208,6 +227,63 @@ def download_excel(driver, scheme):
     except TimeoutException:
         print("No records found on the page.")
         return "no_records"  # Return no records status
+
+
+def download_excel1(driver, scheme, selected_option, fromdate, todate):
+    base_directory = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
+
+    scheme_directory = os.path.join(base_directory, scheme)
+    if not os.path.exists(scheme_directory):
+        os.makedirs(scheme_directory)
+
+    wait = WebDriverWait(driver, 5)
+
+    try:
+        button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.btn.btn-primary.bootbox-accept")))
+        button.click()
+    except Exception:
+        pass
+
+    try:
+        close_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.bootbox-close-button.close")))
+        close_button.click()
+    except Exception:
+        pass
+
+    time.sleep(2)
+
+    button = driver.find_element(By.CSS_SELECTOR, ".btn.btn-success")
+    button.click()
+
+    try:
+        image_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "excelImg"))
+        )
+        image_element.click()
+
+        time.sleep(15)
+
+        files = os.listdir(base_directory)
+        files = [f for f in files if f.endswith('.xls')]
+        if not files:
+            raise FileNotFoundError("No Excel files found in the download directory.")
+
+        latest_file = max([os.path.join(base_directory, f) for f in files], key=os.path.getctime)
+        fromdate = fromdate.replace("/", "-")
+        todate = todate.replace("/", "-")
+
+        new_file_name = os.path.join(scheme_directory, f"{scheme}_{selected_option}_report_{fromdate}_to_{todate}.xls")
+
+        shutil.move(latest_file, new_file_name)
+
+        print(f"Excel file for {scheme} downloaded and saved to {new_file_name}")
+        process_excel_file_and_upload(new_file_name, scheme)
+
+        return new_file_name  # Return the path of the downloaded file
+
+    except TimeoutException:
+        print("No records found on the page.")
+        return "no_records"
 
 
 def process_excel_file_and_upload(file_path, table_name):
@@ -276,18 +352,21 @@ def drop_table(table_name):
 
 def close_driver(driver):
     driver.switch_to.default_content()
+    try:
+        logout = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.PARTIAL_LINK_TEXT, 'VAGUS HOSPITAL'))
+        )
+        logout.click()
 
-    logout = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.PARTIAL_LINK_TEXT, 'VAGUS HOSPITAL'))
-    )
-    logout.click()
+        # Wait for the 'Log Out' button to be clickable and click it
+        logout_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.LINK_TEXT, 'Log Out'))
+        )
+        logout_button.click()
+        time.sleep(5)
+    except Exception:
+        pass
 
-    # Wait for the 'Log Out' button to be clickable and click it
-    logout_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.LINK_TEXT, 'Log Out'))
-    )
-    logout_button.click()
-    time.sleep(5)
     driver.quit()
 
 def input_case_type_again(driver,case_type):
@@ -317,3 +396,131 @@ def mis_report (driver,scheme):
     mis_report = driver.find_element(By.ID, "excelImg")
     mis_report.click()
     driver.switch_to.default_content()
+
+
+def fromdateinput(driver, fromdate):
+    date_input = driver.find_element(By.ID, 'advFromDate')
+
+    # Custom date you want to set
+    custom_date = fromdate  # Use your desired date in yyyy-mm-dd format
+
+    # Use execute_script to set the value directly (bypassing the readonly attribute)
+    driver.execute_script("arguments[0].removeAttribute('readonly')", date_input)  # Remove readonly attribute
+    date_input.clear()
+    date_input.send_keys(custom_date, Keys.ENTER)
+    time.sleep(2)# Set the date using send_keys()
+    wait = WebDriverWait(driver, 5)  # Adjust timeout as needed
+    try:
+        # Wait for the button to be visible and clickable
+        button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.btn.btn-primary.bootbox-accept")))
+        button.click()
+        print("Button clicked successfully!")
+    except Exception as e:
+        print()
+
+
+def todateinput(driver, todate):
+    to_date_input = driver.find_element(By.ID, 'advToDate')
+
+    custom_date = todate
+
+    # Use execute_script to remove the readonly attribute
+    driver.execute_script("arguments[0].removeAttribute('readonly')", to_date_input)
+    to_date_input.clear()
+    # Click the input field after removing readonly
+    # to_date_input.click()
+    to_date_input.send_keys(custom_date, Keys.ENTER)  # Set the date using send_keys()
+    wait = WebDriverWait(driver, 5)
+    try:
+        # Wait for the close button to be visible and clickable
+        close_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.bootbox-close-button.close")))
+        close_button.click()
+        print("Close button clicked successfully!")
+    except Exception as e:
+        print()  # Set the date using send_keys()
+
+
+def process_dates_and_download(driver, intervals, scheme, request):
+    # Loop through date intervals
+    downloaded_files = []  # Collect all downloaded file paths here
+    count = 0
+    for fromdate, todate in intervals:
+        # Pass the dates to the input functions
+        fromdateinput(driver, fromdate)
+        todateinput(driver, todate)
+        print(f"Processing interval: {fromdate} to {todate}")
+
+        # Loop through each option in the dropdown
+        for index in range(1, len(Select(driver.find_element(By.ID, 'dateType')).options)):
+            time.sleep(3)
+
+            try:
+                # Re-locate the dropdown and select the option by index
+                dropdown = Select(driver.find_element(By.ID, 'dateType'))
+                dropdown.select_by_index(index)
+                time.sleep(5)
+
+                # Perform your tasks here
+                selected_option = dropdown.options[index].text
+                print(f"Selected: {selected_option}")
+
+                # Handle the close button if it appears
+                wait1 = WebDriverWait(driver, 5)
+                try:
+                    close_button = wait1.until(
+                        EC.element_to_be_clickable((By.CSS_SELECTOR, "button.bootbox-close-button.close")))
+                    close_button.click()
+                    print("Close button clicked successfully!")
+                except Exception:
+                    pass  # If the button doesn't appear, skip
+
+                # Try to find the image element and click it if it exists
+                try:
+                    # Call download_excel function to download the file
+                    file_path = download_excel1(driver, scheme, selected_option, fromdate, todate)
+                    if file_path and os.path.exists(file_path):
+                        downloaded_files.append(file_path)
+                        count += 1
+                        print(f"File for {selected_option} downloaded and saved at {file_path}")
+                    else:
+                        print(f"No records found for {selected_option}.")
+
+                except NoSuchElementException:
+                    print("NO records found for this option.")
+                    pass
+
+            except StaleElementReferenceException:
+                # Handle stale element reference exception, re-fetch the element
+                print("StaleElementReferenceException: Re-fetching the element...")
+                dropdown = Select(driver.find_element(By.ID, 'dateType'))
+                continue
+
+    if count == 0:
+        return "no_records"
+
+    # Store the list of downloaded files in the session
+    request.session['downloaded_files'] = downloaded_files
+    return "success"
+
+
+
+def get_90_day_intervals(start_date_str, end_date_str):
+    # Convert string dates to datetime objects (assuming format is 'dd/mm/yyyy')
+    start_date = datetime.strptime(start_date_str, '%d/%m/%Y')
+    end_date = datetime.strptime(end_date_str, '%d/%m/%Y')
+
+    intervals = []
+
+    # Loop to create 90-day intervals
+    while start_date < end_date:
+        next_date = start_date + timedelta(days=89)
+        if next_date > end_date:
+            next_date = end_date
+
+        # Append the intervals in string format (dd/mm/yyyy)
+        intervals.append((start_date.strftime('%d/%m/%Y'), next_date.strftime('%d/%m/%Y')))
+
+        # Move start_date to the next interval
+        start_date = next_date
+
+    return intervals

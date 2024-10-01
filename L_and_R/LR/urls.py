@@ -17,5 +17,8 @@ urlpatterns = [
     path('download-again/',views.download_again, name='download_again'),
     path('process/',views.process, name='process'),
     path('logout/',views.close, name='close'),
+    path('download_files/', views.serve_downloaded_files, name='serve_downloaded_files'),
+    path('profile-view/', views.profile_view, name='profile_view'),
+    path('profile/', views.profile, name='profile'),
 
 ]

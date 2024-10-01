@@ -1,71 +1,78 @@
 {% extends 'LR/base.html' %}
 
 {% block title %}Register{% endblock %}
-
+{% block navbar_items %}
+    <li><a href="{% url 'login' %}">Login</a></li>
+{% endblock %}
 {% block content %}
     <div class="registration-form">
         <h2>Register</h2>
         <form method="POST" action="{% url 'register' %}">
-            {% csrf_token %}
-            <!-- First Name -->
-            <label for="{{ form.first_name.id_for_label }}">First Name:</label>
-            {{ form.first_name }}
+    {% csrf_token %}
 
-            <!-- Last Name -->
-            <label for="{{ form.last_name.id_for_label }}">Last Name:</label>
-            {{ form.last_name }}
+    <div>
+        <label for="first_name">First Name:</label>
+        <input type="text" name="first_name" value="{{ first_name }}" id="first_name" required>
+    </div>
 
-            <!-- App Username -->
-            <label for="{{ form.app_username.id_for_label }}">App Username:</label>
-            {{ form.app_username }}
+    <div>
+        <label for="last_name">Last Name:</label>
+        <input type="text" name="last_name" value="{{ last_name }}" id="last_name" required>
+    </div>
 
-            <!-- App Password -->
-            <label for="{{ form.app_password.id_for_label }}">App Password:</label>
-            {{ form.app_password }}
+    <div>
+        <label for="app_username">App Username:</label>
+        <input type="text" name="app_username" value="{{ app_username }}" id="app_username" required>
+    </div>
 
-            <!-- Confirm App Password -->
-            <label for="{{ form.app_password_confirm.id_for_label }}">Confirm App Password:</label>
-            {{ form.app_password_confirm }}
+    <div>
+        <label for="app_password">App Password:</label>
+        <input type="password" name="app_password" value="{{ app_password }}" id="app_password" required>
+    </div>
 
-            <!-- Site Username -->
-            <label for="{{ form.site_username.id_for_label }}">Site Username:</label>
-            {{ form.site_username }}
+    <div>
+        <label for="app_password_confirm">Confirm App Password:</label>
+        <input type="password" name="app_password_confirm" id="app_password_confirm" required>
+    </div>
 
-            <!-- Site Password -->
-            <label for="{{ form.site_password.id_for_label }}">Site Password:</label>
-            {{ form.site_password }}
+    <div>
+        <label for="site_username">Site Username:</label>
+        <input type="text" name="site_username" value="{{ site_username }}" id="site_username" required>
+    </div>
 
-            <!-- Confirm Site Password -->
-            <label for="{{ form.site_password_confirm.id_for_label }}">Confirm Site Password:</label>
-            {{ form.site_password_confirm }}
+    <div>
+        <label for="site_password">Site Password:</label>
+        <input type="password" name="site_password" value="{{ site_password }}" id="site_password" required>
+    </div>
 
-            <!-- Organization -->
-            <label for="{{ form.organization.id_for_label }}">Organization:</label>
-            {{ form.organization }}
+    <div>
+        <label for="site_password_confirm">Confirm Site Password:</label>
+        <input type="password" name="site_password_confirm" id="site_password_confirm" required>
+    </div>
 
-            <!-- Phone Number -->
-            <label for="{{ form.phone_number.id_for_label }}">Phone Number:</label>
-            {{ form.phone_number }}
+    <div>
+        <label for="phone_number">Phone Number:</label>
+        <input type="text" name="phone_number" value="{{ phone_number }}" id="phone_number" required>
+    </div>
 
-            <!-- Email Address -->
-            <label for="{{ form.email_address.id_for_label }}">Email Address:</label>
-            {{ form.email_address }}
+    <div>
+        <label for="email_address">Email Address:</label>
+        <input type="email" name="email_address" value="{{ email_address }}" id="email_address" required>
+    </div>
 
-            <!-- Address -->
-            <label for="{{ form.address.id_for_label }}">Address:</label>
-            {{ form.address }}
+    <div>
+        <label for="address">Address:</label>
+        <textarea name="address" id="address" required>{{ address }}</textarea>
+    </div>
 
-            <!-- Date of Joining -->
-            <label for="{{ form.date_of_joining.id_for_label }}">Date of Joining (PMJAY):</label>
-            {{ form.date_of_joining }}
+    <div>
+        <label for="organization">Organization:</label>
+        <input type="text" name="organization" value="{{ organization }}" id="organization" required>
+    </div>
 
-            <!-- Active -->
-            <label for="{{ form.is_active.id_for_label }}">Active:</label>
-            {{ form.is_active }}
+    <button type="submit">Register</button>
+</form>
 
-            <!-- Submit Button -->
-            <button type="submit">Register</button>
-        </form>
     </div>
 {% endblock %}
 
