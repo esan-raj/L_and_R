@@ -17,6 +17,7 @@ import io
 from django.contrib.auth import get_user_model
 from .models import AppUser
 from django.contrib.auth import authenticate, login
+from django.contrib.auth import logout as auth_logout
 
 AppUser = get_user_model()
 # Singleton pattern for WebDriver
@@ -30,30 +31,41 @@ class WebDriverSingleton:
         Reinitializes the WebDriver if the session is stale or has been closed.
         """
         if cls._instance is None:
+            # If the instance doesn't exist, initialize it
             cls._instance = initialize_driver()
+
         else:
             try:
                 # Check if the current WebDriver session is still active
-                cls._instance.current_url
+                cls._instance.current_url  # This will raise an exception if the session is closed
             except (WebDriverException, AttributeError):
                 # If the session is stale or WebDriverException occurs, reinitialize the WebDriver
-                cls.quit_instance()
-                cls._instance = initialize_driver()
+                cls.quit_instance()  # Clean up the current instance
+                cls._instance = initialize_driver()  # Create a new instance
+
         return cls._instance
 
     @classmethod
     def quit_instance(cls):
         """
         Closes the WebDriver instance if it exists and sets the instance to None.
-        Handles any exceptions that occur during the shutdown.
         """
         if cls._instance is not None:
             try:
-                close_driver(cls._instance)
+                cls._instance.quit()  # Close the WebDriver session
             except WebDriverException as e:
+                # Log the error (you can replace print with a proper logging mechanism)
                 print(f"Error closing WebDriver: {e}")
             finally:
-                cls._instance = None
+                cls._instance = None  # Reset the instance to None
+
+    @classmethod
+    def refresh_instance(cls):
+        """
+        Forcefully refreshes the WebDriver instance by quitting the current session and reinitializing.
+        """
+        cls.quit_instance()  # Terminate the current WebDriver session
+        cls._instance = initialize_driver()  # Create a new WebDriver instance
 
 
 
@@ -100,6 +112,7 @@ def register(request):
             last_name=last_name,
             app_username=app_username,
             site_username=site_username,
+            site_password=site_password,
             phone_number=phone_number,
             email_address=email_address,
             organization=organization,
@@ -110,8 +123,8 @@ def register(request):
         # Hash passwords before saving
         if password:
             user.set_password(password)  # Hashes the app password
-        if site_password:
-            user.site_password = make_password(site_password)  # Hashes the site password
+        # if site_password:
+        #     user.site_password = make_password(site_password)  # Hashes the site password
 
         user.save()
 
@@ -139,7 +152,7 @@ def login_view(request):
                 # Store additional user info in the session if needed
                 request.session['user_id'] = user.id
                 request.session['app_username'] = app_username
-                driver = WebDriverSingleton.get_instance()
+                # driver = WebDriverSingleton.get_instance()
                 # Redirect to the dashboard page
                 return redirect('dashboard')
             else:
@@ -157,7 +170,7 @@ def dashboard_view(request):
     app_username = request.session.get('app_username')
     if not app_username:
         return redirect('login')
-
+    driver = WebDriverSingleton.refresh_instance()
     # Render the dashboard
     return render(request, 'LR/dashboard.html')
 
@@ -211,7 +224,7 @@ def update_site_password_process(request):
         try:
             user = AppUser.objects.get(app_username=app_username)
             # Hash the new site password before saving
-            user.site_password = make_password(new_site_password)
+            user.site_password = new_site_password
             user.save()
             return render(request, 'LR/success.html', {'message': 'Site password updated successfully.'})
         except AppUser.DoesNotExist:
@@ -359,6 +372,7 @@ def process(request):
 def close(request):
     driver = WebDriverSingleton.get_instance()
     close_driver(driver)
+    auth_logout(request)
     return render(request,'LR/logout.html')
 
 

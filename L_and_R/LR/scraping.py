@@ -58,11 +58,11 @@ def initialize_driver():
     chrome_options.add_experimental_option("prefs", prefs)
     #
     # Add headless mode if desired
-    chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--headless")
     # chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1920x1080")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
+    # chrome_options.add_argument("--window-size=1920x1080")
+    # chrome_options.add_argument("--no-sandbox")
+    # chrome_options.add_argument("--disable-dev-shm-usage")
 
     driver = webdriver.Chrome(service=service, options=chrome_options)
     driver.get("https://tmsreports.pmjay.gov.in/OneTMS/loginnew.htm")
@@ -95,14 +95,13 @@ def login_site(driver,site_username, site_password):
             EC.element_to_be_clickable((By.CSS_SELECTOR, "button.bootbox-close-button.close"))
         )
         close_button.click()
+        login_site(driver, site_username, site_password)
     except Exception:
-        login_site(driver,site_username, site_password)
+        pass
+
     captcha_download(driver)
 
-# def navigate_to_form(driver):
-#     captcha_img = driver.find_element(By.ID, 'captchaImg')
-#     captcha_src = captcha_img.get_attribute('src')
-#     return captcha_src
+
 def captcha_download(driver):
     # Directory where captcha images will be saved
     captcha_directory = "L_and_R/media/captchas"
