@@ -449,3 +449,5 @@ def profile_view(request):
     # If it's a GET request, just render the profile form with current user data
     return render(request, 'LR/profile.html', {'user': user})
 
+# def claim_paid_data(request):
+

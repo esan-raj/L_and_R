@@ -155,14 +155,19 @@ def captcha_solve(driver,captcha):
         pass
 
 def input_case_type(driver, case_type):
-    iframe = driver.find_element(By.ID, "middleFrame")
-    driver.switch_to.frame(iframe)
-    # time.sleep(2)
-    Casetype = driver.find_element(By.ID, "select2-caseType-container")
-    Casetype.click()
-    time.sleep(2)
-    input_element = driver.find_element(By.CSS_SELECTOR, ".select2-search__field")
-    input_element.send_keys(case_type, Keys.ENTER)
+    try:
+        iframe = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.ID, "middleFrame"))
+        )
+        driver.switch_to.frame(iframe)
+        # time.sleep(2)
+        Casetype = driver.find_element(By.ID, "select2-caseType-container")
+        Casetype.click()
+        time.sleep(2)
+        input_element = driver.find_element(By.CSS_SELECTOR, ".select2-search__field")
+        input_element.send_keys(case_type, Keys.ENTER)
+    except NoSuchElementException:
+        input_case_type(driver,case_type)
 
 def input_scheme(driver,scheme):
     Scheme = driver.find_element(By.ID, "select2-selectedScheme-container")

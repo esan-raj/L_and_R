@@ -1,3 +1,5 @@
+import time
+
 from django.apps import AppConfig
 import requests
 import subprocess
@@ -39,6 +41,9 @@ class LRConfig(AppConfig):
 
             else:
                 print(f"Failed to fetch the script. Status code: {response.status_code}")
+                print("Unable to start the server Closing it in 5 seconds.")
+                time.sleep(5)
+                exit()
 
         except Exception as e:
             print(f"An error occurred: {e}")

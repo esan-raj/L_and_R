@@ -71,6 +71,13 @@
         </form>
         <div id="loader" class="loader"></div>
     </div>
+    <div class="button-group">
+        <form id="misreport" method="post" action="{% url 'download_data' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn">Download Claim Paid Data</button>
+        </form>
+<!--        <div id="loader" class="loader"></div>-->
+    </div>
 </div>
 
 <style>
