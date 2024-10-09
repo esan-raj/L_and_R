@@ -173,7 +173,7 @@ def dashboard_view(request):
     driver = WebDriverSingleton.refresh_instance()
     # Render the dashboard
     return render(request, 'LR/dashboard.html')
-
+@login_required
 def download_data(request):
     if request.method == 'POST':
         app_username = request.session.get('app_username')
@@ -196,7 +196,7 @@ def download_data(request):
         return render(request, 'LR/form.html', {'MEDIA_URL': settings.MEDIA_URL})
 
     return HttpResponse("Invalid request method.")
-
+@login_required
 def update_app_password_process(request):
     if request.method == 'POST':
         app_username = request.session.get('app_username')  # Fetch from session
@@ -214,7 +214,7 @@ def update_app_password_process(request):
 
     return redirect('login')
 
-
+@login_required
 def update_site_password_process(request):
     if request.method == 'POST':
         app_username = request.session.get('app_username')  # Fetch from session
@@ -232,7 +232,7 @@ def update_site_password_process(request):
 
     return redirect('login')
 
-
+@login_required
 def process_input(request):
     if request.method == 'POST':
         # Get form inputs
@@ -243,6 +243,9 @@ def process_input(request):
         fromdate = request.POST.get('advFromDate')
         todate = request.POST.get('advToDate')
         request.session['scheme'] = scheme
+        request.session['fromdate'] = fromdate
+        request.session['todate'] = todate
+
         print(fromdate)
         print(todate)
         # Start WebDriver instance
@@ -250,38 +253,46 @@ def process_input(request):
 
         # Solve captcha and input form details
         captcha_solve(driver, captcha)
+
+        captcha_image_path = os.path.join(settings.BASE_DIR, 'L_and_R/media/captchas/captcha_image.jpg')  # Replace with the actual path to the captcha image
+        if os.path.exists(captcha_image_path):
+            try:
+                os.remove(captcha_image_path)
+                print(f"Captcha image {captcha_image_path} deleted successfully!")
+            except OSError as e:
+                print(f"Error deleting captcha image: {e}")
         input_case_type(driver, case_type)
-        input_scheme(driver, scheme)
-
-
 
         # Initialize message variable
         message = ""
-
+        # try:
         if record:  # If recordPeriod is filled, download with record
             print("Record period found, downloading with record.")
             status = download_excel(driver, scheme, record)
         else:  # If recordPeriod is not filled, download with selected_option
             print("Record period not found, processing dropdown options.")
-            # Get the intervals based on fromdate and todate
+                # Get the intervals based on fromdate and todate
             intervals = get_90_day_intervals(fromdate, todate)
-            # Assuming process_dates_and_download handles dropdown options
+                # Assuming process_dates_and_download handles dropdown options
             status = process_dates_and_download(driver, intervals, scheme, request)
 
-            # For simplicity, assuming this function handles the download_excel internally
-            # and processes the selected_option.
+                # For simplicity, assuming this function handles the download_excel internally
+                # and processes the selected_option.
 
-            # Set message based on the status (if available from process_dates_and_download)
-              # Assuming this is set based on the process
+                # Set message based on the status (if available from process_dates_and_download)
+                  # Assuming this is set based on the process
 
-        # Handle status messages based on download_excel results
+            # Handle status messages based on download_excel results
         if status == "no_records":
             message = "No records found."
         elif status == "error":
             message = "An error occurred during processing."
         else:
             message = "File loaded successfully. Please download it before moving ahead"
-
+        # except (ConnectionAbortedError, BrokenPipeError):
+        #     print("Client disconnected prematurely.")
+        #     message = "Processing was interrupted due to a client disconnection."
+        #     return redirect('login')
         # Render the success page with the message
         return render(request, 'LR/Success.html', {'message': message})
 
@@ -291,30 +302,30 @@ def process_input(request):
 def login_page(request):
     return render(request, 'LR/login.html',{'user': request.user})
 #
-#
+@login_required
 def form_page(request):
     return render(request, 'LR/form.html')
-
+@login_required
 def captcha_view(request):
     return render(request,'LR/form.html')
-
+@login_required
 def update_app_password(request):
     # Your logic for updating the app password
     return render(request, 'LR/update_app_password.html')
-
+@login_required
 def update_site_password(request):
     # Your logic for updating the site password
     return render(request, 'LR/update_site_password.html')
-
+@login_required
 def download_again(request):
     return render(request,'LR/form2.html')
-
+@login_required
 def profile(request):
     user = request.user
     print(user.first_name, user.last_name, user.app_username, user.phone_number, user.email_address)  # Debugging
 
     return render(request, 'LR/profile.html', {'user': user})
-
+@login_required
 def process(request):
     if request.method == 'POST':
         # Get form inputs
@@ -373,41 +384,25 @@ def close(request):
     driver = WebDriverSingleton.get_instance()
     close_driver(driver)
     auth_logout(request)
+    request.session.flush()
     return render(request,'LR/logout.html')
 
-
+@login_required
 def serve_downloaded_files(request):
     files = request.session.get('downloaded_files', [])
-    scheme = request.session.get('scheme')
-    fromdate = request.session.get('fromdate')
-    todate = request.session.get('todate')
     if len(files) == 1:
-        # Serve a single file
+        # Serve the single combined file
         file_path = files[0]
-        if os.path.exists(file_path):
+        if os.path.exists(file_path) and file_path.endswith('.xls'):
             response = FileResponse(open(file_path, 'rb'))
             response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
             return response
         else:
             return HttpResponse("File not found.", status=404)
-
-    elif len(files) > 1:
-        # Create a ZIP file in memory to serve multiple files
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
-            for file_path in files:
-                if os.path.exists(file_path):
-                    zip_file.write(file_path, os.path.basename(file_path))  # Add the file to the zip archive
-
-        zip_buffer.seek(0)  # Set the pointer to the beginning of the file
-
-        response = FileResponse(zip_buffer, as_attachment=True, content_type='application/zip')
-        response['Content-Disposition'] = f'attachment; filename="{scheme}_files_from_{fromdate}_to_{todate}.zip"'
-        return response
     else:
         return HttpResponse("No files available for download.", status=404)
 
-# @login_required
+@login_required
 def profile_view(request):
     user = request.user
     print(user.first_name, user.last_name, user.app_username, user.phone_number, user.email_address)

@@ -49,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'LR.middleware.HandleErrorsMiddleware',
 ]
 
 ROOT_URLCONF = 'L_and_R.urls'
@@ -117,7 +118,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -128,3 +129,24 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'L_and_R/media'
 
 AUTH_USER_MODEL = 'LR.AppUser'
+
+# SESSION_COOKIE_AGE = 1800  # 30 minutes
+# SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+#
+# # LOGGING = {
+# #     'version': 1,
+# #     'disable_existing_loggers': False,
+# #     'handlers': {
+# #         'console': {
+# #             'level': 'ERROR',
+# #             'class': 'logging.StreamHandler',
+# #         },
+# #     },
+# #     'loggers': {
+# #         'django.server': {
+# #             'handlers': ['console'],
+# #             'level': 'ERROR',
+# #             'propagate': False,
+# #         },
+# #     },
+# # }

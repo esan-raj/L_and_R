@@ -10,12 +10,12 @@
     <h1>{{ message }}</h1>
     <form action="{% url 'download_again' %}" method="post">
         {% csrf_token %}
-        <button type="submit" class="download-again-btn">For Download Again</button>
+        <button type="submit" class="download-again-btn">Go back to download page</button>
     </form>
-    <form action="{% url 'close' %}" method="post">
-        {% csrf_token %}
-        <button type="submit" class="logout-btn">Logout</button>
-    </form>
+<!--    <form action="{% url 'close' %}" method="post">-->
+<!--        {% csrf_token %}-->
+<!--        <button type="submit" class="logout-btn">Logout</button>-->
+<!--    </form>-->
 
     <a href="{% url 'serve_downloaded_files' %}" class="download-btn">Download Files</a>
 

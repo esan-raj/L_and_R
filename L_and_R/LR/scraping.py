@@ -16,6 +16,8 @@ from datetime import datetime, timedelta
 from .models import AppUser,DynamicExcelData
 import pandas as pd
 from django.db import connection # Import the AppUser model
+import xlrd  # For reading .xls files
+import xlwt
 
 def fetch_site_username(app_username):
     try:
@@ -40,8 +42,9 @@ def fetch_site_password(app_username):
         return None
 
 
-download_dir = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
+
 def initialize_driver():
+    download_dir = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
     base_dir = os.path.dirname(os.path.abspath(__file__))  # Get the directory of the current file
     driver_path = os.path.join(base_dir, 'drivers', 'chromedriver.exe')
     service = Service(driver_path)
@@ -58,11 +61,11 @@ def initialize_driver():
     chrome_options.add_experimental_option("prefs", prefs)
     #
     # Add headless mode if desired
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1920x1080")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
+    # chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--disable-gpu")
+    # chrome_options.add_argument("--window-size=1920x1080")
+    # chrome_options.add_argument("--no-sandbox")
+    # chrome_options.add_argument("--disable-dev-shm-usage")
 
     driver = webdriver.Chrome(service=service, options=chrome_options)
     driver.get("https://tmsreports.pmjay.gov.in/OneTMS/loginnew.htm")
@@ -166,7 +169,9 @@ def input_case_type(driver, case_type):
         time.sleep(2)
         input_element = driver.find_element(By.CSS_SELECTOR, ".select2-search__field")
         input_element.send_keys(case_type, Keys.ENTER)
-    except NoSuchElementException:
+        dropdown = Select(driver.find_element(By.ID, 'dateType'))
+        dropdown.select_by_value('ADS92')
+    except (NoSuchElementException, TimeoutException):
         input_case_type(driver,case_type)
 
 def input_scheme(driver,scheme):
@@ -233,7 +238,7 @@ def download_excel(driver, scheme, record):
         return "no_records"  # Return no records status
 
 
-def download_excel1(driver, scheme, selected_option, fromdate, todate):
+def download_excel1(driver, scheme, fromdate, todate):
     base_directory = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
 
     scheme_directory = os.path.join(base_directory, scheme)
@@ -276,7 +281,7 @@ def download_excel1(driver, scheme, selected_option, fromdate, todate):
         fromdate = fromdate.replace("/", "-")
         todate = todate.replace("/", "-")
 
-        new_file_name = os.path.join(scheme_directory, f"{scheme}_{selected_option}_report_{fromdate}_to_{todate}.xls")
+        new_file_name = os.path.join(scheme_directory, f"{scheme}_{fromdate}_to_{todate}_report.xls")
 
         shutil.move(latest_file, new_file_name)
 
@@ -445,44 +450,47 @@ def todateinput(driver, todate):
 
 
 def process_dates_and_download(driver, intervals, scheme, request):
-    # Loop through date intervals
-    downloaded_files = []  # Collect all downloaded file paths here
+    # Initialize an empty list to collect all downloaded file paths
+    downloaded_files = []
     count = 0
-    for fromdate, todate in intervals:
-        # Pass the dates to the input functions
-        fromdateinput(driver, fromdate)
-        todateinput(driver, todate)
-        print(f"Processing interval: {fromdate} to {todate}")
+    selected_option = "Registered Date"  # Hardcoding the option name here
+    date_type_value = "ADS92"  # Hardcoding the value for "Registered Date"
+    scheme_options = ["PMJ", "R", "P", "M", "CK", "MVSSY", "NP", "PORT", "CB", "TELE", "PVTG", "S"]
 
-        # Loop through each option in the dropdown
-        for index in range(1, len(Select(driver.find_element(By.ID, 'dateType')).options)):
-            time.sleep(3)
+    # If scheme is "ALL", process for each scheme in the list
+    schemes_to_process = scheme_options if scheme == "ALL" else [scheme]
+
+    # Loop through the schemes
+    for current_scheme in schemes_to_process:
+        print(f"Processing scheme: {current_scheme}")
+        input_scheme(driver,current_scheme)
+    # Loop through date intervals
+        for fromdate, todate in intervals:
+            # Input the dates into the form
+            fromdateinput(driver, fromdate)
+            todateinput(driver, todate)
+            print(f"Processing interval: {fromdate} to {todate}")
+
+            time.sleep(3)  # Adjust as necessary for the page load
 
             try:
-                # Re-locate the dropdown and select the option by index
-                dropdown = Select(driver.find_element(By.ID, 'dateType'))
-                dropdown.select_by_index(index)
-                time.sleep(5)
-
-                # Perform your tasks here
-                selected_option = dropdown.options[index].text
                 print(f"Selected: {selected_option}")
 
-                # Handle the close button if it appears
+                # Close any modal window that appears
                 wait1 = WebDriverWait(driver, 5)
                 try:
                     close_button = wait1.until(
-                        EC.element_to_be_clickable((By.CSS_SELECTOR, "button.bootbox-close-button.close")))
+                        EC.element_to_be_clickable((By.CSS_SELECTOR, "button.bootbox-close-button.close"))
+                    )
                     close_button.click()
                     print("Close button clicked successfully!")
                 except Exception:
-                    pass  # If the button doesn't appear, skip
+                    pass  # Ignore if no close button appears
 
-                # Try to find the image element and click it if it exists
+                # Download the file and store its path
                 try:
-                    # Call download_excel function to download the file
-                    file_path = download_excel1(driver, scheme, selected_option, fromdate, todate)
-                    if file_path and os.path.exists(file_path):
+                    file_path = download_excel1(driver, scheme,fromdate, todate)
+                    if file_path and os.path.exists(file_path) and file_path.endswith(".xls"):
                         downloaded_files.append(file_path)
                         count += 1
                         print(f"File for {selected_option} downloaded and saved at {file_path}")
@@ -490,23 +498,60 @@ def process_dates_and_download(driver, intervals, scheme, request):
                         print(f"No records found for {selected_option}.")
 
                 except NoSuchElementException:
-                    print("NO records found for this option.")
+                    print("No records found for this option.")
                     pass
 
-            except StaleElementReferenceException:
-                # Handle stale element reference exception, re-fetch the element
-                print("StaleElementReferenceException: Re-fetching the element...")
-                dropdown = Select(driver.find_element(By.ID, 'dateType'))
+            except Exception as e:
+                print(f"Error: {e}")
                 continue
+
+    if downloaded_files:
+        # Combine the files after all downloads are complete
+        combined_file_path = combine_xls_files(request,downloaded_files, scheme)
+        print(f"Files combined and saved at {combined_file_path}")
+        for file_path in downloaded_files:
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    print(f"Deleted individual file: {file_path}")
+                except OSError as e:
+                    print(f"Error deleting file {file_path}: {e}")
+        # Update session to store only the combined file path
+        request.session['downloaded_files'] = [combined_file_path]  # Store only the combined file path
+        return combined_file_path  # Return the path to the combined file
 
     if count == 0:
         return "no_records"
 
-    # Store the list of downloaded files in the session
-    request.session['downloaded_files'] = downloaded_files
     return "success"
 
 
+def combine_xls_files(request,file_paths, scheme):
+    # Create a new workbook to combine all sheets
+    base_directory = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
+    combined_wb = xlwt.Workbook()
+    combined_sheet = combined_wb.add_sheet('Combined')
+    fromdate = request.session.get('fromdate')
+    todate = request.session.get('todate')
+    fromdate = fromdate.replace("/", "-")
+    todate = todate.replace("/", "-")
+    current_row = 0
+    for file_path in file_paths:
+        # Open each .xls file
+        wb = xlrd.open_workbook(file_path)
+        sheet = wb.sheet_by_index(0)  # Assuming data is in the first sheet
+
+        # Copy each row from the current file to the combined file
+        for row_idx in range(sheet.nrows):
+            for col_idx in range(sheet.ncols):
+                combined_sheet.write(current_row, col_idx, sheet.cell_value(row_idx, col_idx))
+            current_row += 1
+
+    # Save the combined .xls file with a name based on the scheme
+    combined_file_path = os.path.join(base_directory,f"{scheme}_combined_{fromdate}_to_{todate}.xls")
+    combined_wb.save(combined_file_path)
+
+    return combined_file_path
 
 def get_90_day_intervals(start_date_str, end_date_str):
     # Convert string dates to datetime objects (assuming format is 'dd/mm/yyyy')

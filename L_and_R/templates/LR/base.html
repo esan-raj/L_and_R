@@ -108,6 +108,18 @@ footer {
 
     </style>
     {% block extra_styles %}{% endblock %}
+<!--    <script type="text/javascript">-->
+<!--    window.onbeforeunload = function(event) {-->
+<!--        // Send an AJAX request to the server to call the close function-->
+<!--        fetch("{% url 'close' %}", {-->
+<!--            method: 'POST',-->
+<!--            credentials: 'same-origin',-->
+<!--            headers: {-->
+<!--                'X-CSRFToken': '{{ csrf_token }}',-->
+<!--            },-->
+<!--        });-->
+<!--    };-->
+<!--</script>-->
 </head>
 <body>
     <!-- Header -->
@@ -137,6 +149,7 @@ footer {
     <footer>
         <p>&copy; 2024 MediPort. All Rights Reserved.</p>
     </footer>
+
     {% block extra_scripts %} {% endblock %}
 </body>
 
