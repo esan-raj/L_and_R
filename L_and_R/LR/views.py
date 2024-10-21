@@ -444,5 +444,90 @@ def profile_view(request):
     # If it's a GET request, just render the profile form with current user data
     return render(request, 'LR/profile.html', {'user': user})
 
-# def claim_paid_data(request):
+def claimpaid(request):
+    if request.method == 'POST':
+        app_username = request.session.get('app_username')
+
+        if not app_username:
+            return redirect('login')
+
+        # Fetch the site credentials using the app_username
+        site_username = fetch_site_username(app_username)
+        site_password = fetch_site_password(app_username)
+
+        if not site_username or not site_password:
+            return HttpResponse("Site credentials not found or invalid.")
+
+        driver = WebDriverSingleton.get_instance()
+        # Start the WebDriver process
+        login_site(driver, site_username, site_password)
+
+        # After processing, render form.html
+        return render(request, 'LR/claim_paid_report.html', {'MEDIA_URL': settings.MEDIA_URL})
+
+    return HttpResponse("Invalid request method.")
+def claim_paid_data(request):
+    if request.method == 'POST':
+        # Get form inputs
+        case_type = request.POST.get('caseType')
+        scheme = request.POST.get('Scheme')
+        captcha = request.POST.get('captcha')
+        fromdate = request.POST.get('from_date')
+        todate = request.POST.get('to_date')
+        print(fromdate)
+        print(todate)
+        # Store scheme and date range in the session
+        request.session['scheme'] = scheme
+        request.session['fromdate'] = fromdate
+        request.session['todate'] = todate
+
+        print(f"Processing for Scheme: {scheme}, From Date: {fromdate}, To Date: {todate}")
+
+        # Start WebDriver instance
+        driver = WebDriverSingleton.get_instance()
+
+        # Solve captcha and input form details
+        captcha_solve(driver, captcha)
+
+        # Remove the captcha image if it exists
+        captcha_image_path = os.path.join(
+            settings.BASE_DIR, 'L_and_R/media/captchas/captcha_image.jpg'
+        )
+        if os.path.exists(captcha_image_path):
+            try:
+                os.remove(captcha_image_path)
+                print(f"Captcha image {captcha_image_path} deleted successfully!")
+            except OSError as e:
+                print(f"Error deleting captcha image: {e}")
+
+        # Input case type into the form
+        # input_case_type(driver, case_type)
+
+        # Initialize message variable
+        message = ""
+
+        try:
+            # Get date intervals based on the provided date range
+            intervals = get_90_day_intervals_mis(fromdate, todate)
+
+            # Process MIS report based on the intervals and scheme
+            status = mis_report(driver, scheme, intervals,request)
+
+            # Set appropriate message based on status
+            if status == "no_records":
+                message = "No records found."
+            elif status == "error":
+                message = "An error occurred during processing."
+            else:
+                message = "File loaded successfully. Please download it before proceeding."
+
+        except (ConnectionAbortedError, BrokenPipeError):
+            print("Client disconnected prematurely.")
+            message = "Processing was interrupted due to a client disconnection."
+            return redirect('login')
+
+        # Render the success page with the message
+        return render(request, 'LR/Success.html', {'message': message})
+
+    return HttpResponse("Invalid request method.")
 

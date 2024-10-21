@@ -36,7 +36,7 @@
         background-color: #0056b3; /* Darker blue on hover */
     }
 
-    .loader {
+    #loader {
         display: none; /* Hidden by default */
         border: 4px solid rgba(0,0,0,0.1); /* Light border */
         border-radius: 50%; /* Circular loader */
@@ -72,7 +72,7 @@
         <div id="loader" class="loader"></div>
     </div>
     <div class="button-group">
-        <form id="misreport" method="post" action="{% url 'download_data' %}">
+        <form id="misreport" method="post" action="{% url 'claimpaid' %}">
             {% csrf_token %}
             <button type="submit" class="btn">Download Claim Paid Data</button>
         </form>

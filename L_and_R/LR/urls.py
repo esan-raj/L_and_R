@@ -20,5 +20,7 @@ urlpatterns = [
     path('download_files/', views.serve_downloaded_files, name='serve_downloaded_files'),
     path('profile-view/', views.profile_view, name='profile_view'),
     path('profile/', views.profile, name='profile'),
+    path('claimpaid/', views.claimpaid, name='claimpaid'),
+    path('claimpaiddata/', views.claim_paid_data, name='claimpaiddata'),
 
 ]

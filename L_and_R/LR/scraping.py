@@ -18,7 +18,7 @@ import pandas as pd
 from django.db import connection # Import the AppUser model
 import xlrd  # For reading .xls files
 import xlwt
-
+from selenium.webdriver.common.action_chains import ActionChains
 def fetch_site_username(app_username):
     try:
         # Fetch the user's website username (site_username) from the database
@@ -148,8 +148,9 @@ def captcha_solve(driver,captcha):
     click_to_login.click()
     login_button = driver.find_element(By.ID, 'login-submit')
     login_button.click()
+    time.sleep(10)
     try:
-        skip_button = WebDriverWait(driver, 20).until(
+        skip_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.ID, 'skipBtn'))
         )
         time.sleep(2)  # Add a short delay to ensure the button is fully ready
@@ -157,7 +158,64 @@ def captcha_solve(driver,captcha):
     except Exception as e:
         pass
 
+    try:
+        # Wait for the close button to be present
+        close_button = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "button.btn.btn-default[data-dismiss='modal']"))
+        )
+        print("Close button found.")
+
+        # Scroll into view
+        driver.execute_script("arguments[0].scrollIntoView(true);", close_button)
+
+        # Get button's position
+        location = close_button.location
+        size = close_button.size
+
+        # Scroll window to the button's coordinates
+        driver.execute_script(f"window.scrollTo({location['x']}, {location['y']});")
+
+        # Use ActionChains to click at the button's coordinates
+        actions = ActionChains(driver)
+        actions.move_by_offset(location['x'] + size['width'] / 2, location['y'] + size['height'] / 2).click().perform()
+        print("Clicked the close button using coordinates.")
+
+    except Exception:
+        pass
+
 def input_case_type(driver, case_type):
+    try:
+        # Wait for the skip button to be clickable with a timeout of 10 seconds
+        skip_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "skipBtn"))
+        )
+        skip_button.click()
+        print("Skip button clicked successfully!")
+    except TimeoutException:
+        print("Skip button did not become clickable in time.")
+    except Exception as e:
+        print(f"Failed to click the skip button. Error: {str(e)}")
+
+    menu_toggle = driver.find_element(By.ID, "menu_toggle")
+    menu_toggle.click()
+    try:
+        # Wait for the element to be clickable
+        cases_search = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Cases Search')]"))
+        )
+        print("Cases Search element found.")
+
+        # Scroll the element into view and click
+        driver.execute_script("arguments[0].scrollIntoView(true);", cases_search)
+        cases_search.click()
+        print("Cases Search element clicked successfully.")
+
+    except TimeoutException:
+        print("Cases Search element did not appear within the time limit.")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
+
     try:
         iframe = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.ID, "middleFrame"))
@@ -385,7 +443,18 @@ def input_case_type_again(driver,case_type):
     input_element = driver.find_element(By.CSS_SELECTOR, ".select2-search__field")
     input_element.send_keys(case_type, Keys.ENTER)
 
-def mis_report (driver,scheme):
+
+def mis_report(driver, scheme, intervals, request):
+    # Initialize directories
+    base_directory = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
+    scheme_directory = os.path.join(base_directory, scheme)
+
+    if not os.path.exists(scheme_directory):
+        os.makedirs(scheme_directory)
+
+    # Initialize variables
+    downloaded_files = []  # Store all downloaded file paths
+    count = 0
     menu_toggle = driver.find_element(By.ID, "menu_toggle")
     menu_toggle.click()
     mis_element = driver.find_element(By.XPATH, "//span[contains(text(), 'MIS')]")
@@ -395,16 +464,78 @@ def mis_report (driver,scheme):
     iframe = WebDriverWait(driver, 10).until(
         EC.frame_to_be_available_and_switch_to_it((By.ID, "middleFrame"))
     )
-    Scheme = driver.find_element(By.ID, "select2-selectedScheme-container")
-    Scheme.click()
-    input_element = driver.find_element(By.CSS_SELECTOR, ".select2-search__field")
-    # Set the value
-    input_element.send_keys(scheme, Keys.ENTER)
-    button = driver.find_element(By.CSS_SELECTOR, ".btn.btn-success")
-    button.click()
-    mis_report = driver.find_element(By.ID, "excelImg")
-    mis_report.click()
+    scheme_options = get_schemes(driver)
+    schemes_to_process = scheme_options if scheme == "ALL" else [scheme]
+
+    # WebDriverWait instance
+    wait = WebDriverWait(driver, 5)
+
+    for current_scheme in schemes_to_process:
+        print(f"Processing scheme: {current_scheme}")
+        input_scheme(driver, current_scheme)  # Input scheme name
+
+        # Loop through date intervals
+        for fromdate, todate in intervals:
+            fromdateinputmis(driver, fromdate)
+            todateinputmis(driver, todate)
+            print(f"Processing interval: {fromdate} to {todate}")
+
+            time.sleep(3)  # Adjust as necessary for page load
+
+            try:
+                # Attempt to close any modals if present
+                try:
+                    close_button = wait.until(
+                        EC.element_to_be_clickable((By.CSS_SELECTOR, "button.bootbox-close-button.close"))
+                    )
+                    close_button.click()
+                    print("Close button clicked successfully!")
+                except Exception:
+                    print("No close button appeared.")
+
+                # Download the Excel report
+                try:
+                    file_path = download_excel_mis(driver, current_scheme, fromdate, todate)
+                    if file_path and os.path.exists(file_path) and file_path.endswith(".xls"):
+                        downloaded_files.append(file_path)
+                        count += 1
+                        print(f"File downloaded and saved at {file_path}")
+                    else:
+                        print("No records found for the given interval.")
+
+                except NoSuchElementException:
+                    print("No records found.")
+                    continue
+
+            except Exception as e:
+                print(f"Error occurred: {e}")
+                continue
     driver.switch_to.default_content()
+    # Combine downloaded files if any
+    if downloaded_files:
+        combined_file_path = combine_xls_files_mis(request, downloaded_files, scheme)
+        print(f"Files combined and saved at {combined_file_path}")
+
+        # Delete individual files after combining
+        for file_path in downloaded_files:
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    print(f"Deleted individual file: {file_path}")
+                except OSError as e:
+                    print(f"Error deleting file {file_path}: {e}")
+
+        # Store only the combined file path in the session
+        request.session['downloaded_files'] = [combined_file_path]
+        return combined_file_path  # Return the combined file path
+
+    # If no records were found
+    if count == 0:
+        return "no_records"
+
+    return "success"
+
+
 
 
 def fromdateinput(driver, fromdate):
@@ -428,6 +559,48 @@ def fromdateinput(driver, fromdate):
         print()
 
 
+def fromdateinputmis(driver, date_value):
+    try:
+        # Locate the 'fromDate' input field
+        from_date_element = driver.find_element(By.ID, "fromDate")
+
+        # Clear the field completely (backspaces multiple times)
+        from_date_element.clear()
+        time.sleep(0.2)
+        for _ in range(10):  # Extra clearing in case the field doesn't fully clear
+            from_date_element.send_keys(Keys.BACK_SPACE)
+
+        # Ensure the field is empty before typing
+        from_date_element.clear()
+
+        # Send the date character by character with a delay
+        for char in date_value:
+            from_date_element.send_keys(char)
+            time.sleep(0.05)  # Slight delay to mimic human typing
+
+        # Optionally hit enter
+        # from_date_element.send_keys(Keys.ENTER)
+
+        # Verify the input matches what was intended
+        entered_value = from_date_element.get_attribute("value")
+        if entered_value != date_value:
+            print(f"Retrying date input. Current value: {entered_value}")
+            from_date_element.clear()
+            from_date_element.send_keys(date_value, Keys.ENTER)
+
+        print(f"Successfully entered 'From Date' as: {date_value}")
+
+        # Wait for any modals or buttons if needed
+        wait = WebDriverWait(driver, 5)  # Adjust timeout as needed
+        try:
+            button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.btn.btn-primary.bootbox-accept")))
+            button.click()
+            print("Button clicked successfully!")
+        except Exception as e:
+            pass  # Ignore if button is not needed
+
+    except Exception as e:
+        print(f"Error while entering 'From Date': {str(e)}")
 def todateinput(driver, todate):
     to_date_input = driver.find_element(By.ID, 'advToDate')
 
@@ -449,13 +622,46 @@ def todateinput(driver, todate):
         print()  # Set the date using send_keys()
 
 
+def todateinputmis(driver, date_value):
+    try:
+        # Locate the 'toDate' input field
+        to_date_element = driver.find_element(By.ID, "toDate")
+
+        # Explicitly wait for the element to be visible and interactable
+        wait = WebDriverWait(driver, 10)
+        wait.until(EC.visibility_of(to_date_element))
+
+        # Clear the input field by sending backspace repeatedly
+        to_date_element.clear()  # Try clearing the field first
+        time.sleep(0.2)  # Small delay after clearing
+        for i in range(10):  # Send additional BACK_SPACE keys for extra clearing
+            to_date_element.send_keys(Keys.BACK_SPACE)
+
+        # Give a short delay to ensure clearing is processed
+        time.sleep(0.5)
+
+        # Send the new date value character by character with a short delay
+        for char in date_value:
+            to_date_element.send_keys(char)
+            time.sleep(0.1)  # Slight delay between key presses to simulate human input
+
+        # Optionally, send the ENTER key after inputting the date
+        to_date_element.send_keys(Keys.ENTER)
+
+        # Optionally wait to confirm the field was populated
+        time.sleep(0.5)  # Short wait after entering the value
+
+        print(f"Successfully entered 'To Date' as: {date_value}")
+
+    except Exception as e:
+        print(f"Error while entering 'To Date': {str(e)}")
 def process_dates_and_download(driver, intervals, scheme, request):
     # Initialize an empty list to collect all downloaded file paths
     downloaded_files = []
     count = 0
     selected_option = "Registered Date"  # Hardcoding the option name here
     date_type_value = "ADS92"  # Hardcoding the value for "Registered Date"
-    scheme_options = ["PMJ", "R", "P", "M", "CK", "MVSSY", "NP", "PORT", "CB", "TELE", "PVTG", "S"]
+    scheme_options = get_schemes(driver)
 
     # If scheme is "ALL", process for each scheme in the list
     schemes_to_process = scheme_options if scheme == "ALL" else [scheme]
@@ -553,6 +759,33 @@ def combine_xls_files(request,file_paths, scheme):
 
     return combined_file_path
 
+
+def combine_xls_files_mis(request,file_paths, scheme):
+    # Create a new workbook to combine all sheets
+    base_directory = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
+    combined_wb = xlwt.Workbook()
+    combined_sheet = combined_wb.add_sheet('Combined')
+    fromdate = request.session.get('fromdate')
+    todate = request.session.get('todate')
+    fromdate = fromdate.replace("/", "-")
+    todate = todate.replace("/", "-")
+    current_row = 0
+    for file_path in file_paths:
+        # Open each .xls file
+        wb = xlrd.open_workbook(file_path)
+        sheet = wb.sheet_by_index(0)  # Assuming data is in the first sheet
+
+        # Copy each row from the current file to the combined file
+        for row_idx in range(sheet.nrows):
+            for col_idx in range(sheet.ncols):
+                combined_sheet.write(current_row, col_idx, sheet.cell_value(row_idx, col_idx))
+            current_row += 1
+
+    # Save the combined .xls file with a name based on the scheme
+    combined_file_path = os.path.join(base_directory,f"{scheme}_scheme_combined_claim_paid_{fromdate}_to_{todate}.xls")
+    combined_wb.save(combined_file_path)
+
+    return combined_file_path
 def get_90_day_intervals(start_date_str, end_date_str):
     # Convert string dates to datetime objects (assuming format is 'dd/mm/yyyy')
     start_date = datetime.strptime(start_date_str, '%d/%m/%Y')
@@ -573,3 +806,114 @@ def get_90_day_intervals(start_date_str, end_date_str):
         start_date = next_date
 
     return intervals
+
+
+def get_90_day_intervals_mis(start_date_str, end_date_str):
+    # Convert string dates to datetime objects (assuming format is 'dd-mm-yyyy')
+    start_date = datetime.strptime(start_date_str, '%d-%m-%Y')
+    end_date = datetime.strptime(end_date_str, '%d-%m-%Y')
+
+    intervals = []
+
+    # Loop to create 90-day intervals
+    while start_date < end_date:
+        next_date = start_date + timedelta(days=89)
+        if next_date > end_date:
+            next_date = end_date
+
+        # Append the intervals in string format (dd-mm-yyyy)
+        intervals.append((start_date.strftime('%d-%m-%Y'), next_date.strftime('%d-%m-%Y')))
+
+        # Move start_date to the next interval
+        start_date = next_date + timedelta(days=1)  # Move to the next day after the current interval
+
+    return intervals
+
+
+def get_schemes(driver):
+    try:
+        # Locate the dropdown element (select box)
+        dropdown = Select(driver.find_element(By.ID, "selectedScheme"))
+
+        # Extract all options from the dropdown
+        options = dropdown.options
+
+        # Get the values of the options (excluding invalid ones like "---select---")
+        scheme_options = [option.get_attribute("value") for option in options if option.get_attribute("value") != "-1"]
+
+        return scheme_options
+
+    except Exception as e:
+        print(f"Error extracting scheme options: {str(e)}")
+        return []
+
+def download_excel_mis(driver, scheme, fromdate, todate):
+    # Set up directories
+    base_directory = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
+    scheme_directory = os.path.join(base_directory, scheme)
+
+    if not os.path.exists(scheme_directory):
+        os.makedirs(scheme_directory)
+
+    wait = WebDriverWait(driver, 5)
+
+    # Attempt to click any primary button (if present)
+    try:
+        button = wait.until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.btn.btn-primary.bootbox-accept"))
+        )
+        button.click()
+    except Exception:
+        pass  # Ignore if the button isn't found
+
+    # Attempt to close any modal popups
+    try:
+        close_button = wait.until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.bootbox-close-button.close"))
+        )
+        close_button.click()
+    except Exception:
+        pass  # Ignore if no close button appears
+
+    # Wait briefly before proceeding
+    time.sleep(2)
+
+    # Trigger the Excel download
+    driver.find_element(By.CSS_SELECTOR, ".btn.btn-success").click()
+
+    try:
+        # Wait for the Excel image (download indicator) to be present and clickable
+        image_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "excelImg"))
+        )
+        image_element.click()
+
+        time.sleep(15)  # Give time for the download to complete
+
+        # Fetch the latest downloaded file
+        files = [f for f in os.listdir(base_directory) if f.endswith('.xls')]
+        if not files:
+            raise FileNotFoundError("No Excel files found in the download directory.")
+
+        latest_file = max(
+            [os.path.join(base_directory, f) for f in files], key=os.path.getctime
+        )
+
+        # Prepare the new file name
+        fromdate = fromdate.replace("/", "-")
+        todate = todate.replace("/", "-")
+        new_file_name = os.path.join(scheme_directory, f"{scheme}_{fromdate}_to_{todate}_report.xls")
+
+        # Move the downloaded file to the scheme-specific directory
+        shutil.move(latest_file, new_file_name)
+
+        print(f"Excel file for {scheme} downloaded and saved to {new_file_name}")
+
+        # Process and upload the Excel file
+        process_excel_file_and_upload(new_file_name, scheme)
+
+        return new_file_name  # Return the path of the downloaded file
+
+    except TimeoutException:
+        print("No records found on the page.")
+        return "no_records"
