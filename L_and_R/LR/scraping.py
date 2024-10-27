@@ -343,8 +343,9 @@ def download_excel1(driver, scheme, fromdate, todate):
 
         shutil.move(latest_file, new_file_name)
 
-        print(f"Excel file for {scheme} downloaded and saved to {new_file_name}")
-        process_excel_file_and_upload(new_file_name, scheme)
+        # print(f"Excel file for {scheme} downloaded and saved to {new_file_name}")
+        table_name = 'CaseSearch'
+        process_excel_file_and_upload(new_file_name, table_name)
 
         return new_file_name  # Return the path of the downloaded file
 
@@ -384,16 +385,16 @@ def process_excel_file_and_upload(file_path, table_name):
                 row_data = tuple(row[col] for col in columns)
 
                 # Check for redundancy
-                placeholders = ' AND '.join([f'"{col}" = %s' for col in columns])
-                check_sql = f'SELECT COUNT(*) FROM "{table_name}" WHERE {placeholders}'
+                placeholders = ' AND '.join([f'`{col}` = %s' for col in columns])
+                check_sql = f'SELECT COUNT(*) FROM `{table_name}` WHERE {placeholders}'
                 cursor.execute(check_sql, row_data)
                 redundancy_count = cursor.fetchone()[0]
 
                 if redundancy_count == 0:  # If no redundancy, proceed with insertion
                     # Construct the SQL query to insert data
                     placeholders = ', '.join(['%s'] * len(columns))  # Properly format placeholders
-                    column_names = ', '.join([f'"{col}"' for col in columns])  # Properly quote column names
-                    sql = f'INSERT INTO "{table_name}" ({column_names}) VALUES ({placeholders})'
+                    column_names = ', '.join([f'`{col}`' for col in columns])  # Use backticks for column names
+                    sql = f'INSERT INTO `{table_name}` ({column_names}) VALUES ({placeholders})'
 
                     # Execute the SQL query with the row values
                     cursor.execute(sql, row_data)
@@ -403,14 +404,16 @@ def process_excel_file_and_upload(file_path, table_name):
         print(f"An error occurred while processing the file: {e}")
 
 
+
 def create_table_if_not_exists(table_name, columns):
-    # Generate the SQL to create a table dynamically
-    column_definitions = ', '.join([f'"{col}" TEXT' for col in columns])  # Ensure column names are properly quoted
-    create_table_sql = f'CREATE TABLE IF NOT EXISTS "{table_name}" (id INTEGER PRIMARY KEY AUTOINCREMENT, {column_definitions})'
+    # Generate the SQL to create a table dynamically, using backticks for MySQL compatibility
+    column_definitions = ', '.join([f'`{col}` TEXT' for col in columns])  # Use backticks for column names
+    create_table_sql = f'CREATE TABLE IF NOT EXISTS `{table_name}` (id INT PRIMARY KEY AUTO_INCREMENT, {column_definitions})'
 
     with connection.cursor() as cursor:
         cursor.execute(create_table_sql)
         print(f"Table '{table_name}' created or already exists.")
+
 
 def drop_table(table_name):
     with connection.cursor() as cursor:
@@ -908,9 +911,9 @@ def download_excel_mis(driver, scheme, fromdate, todate):
         shutil.move(latest_file, new_file_name)
 
         print(f"Excel file for {scheme} downloaded and saved to {new_file_name}")
-
+        table_name = 'ClaimPaid'
         # Process and upload the Excel file
-        process_excel_file_and_upload(new_file_name, scheme)
+        process_excel_file_and_upload(new_file_name, table_name)
 
         return new_file_name  # Return the path of the downloaded file
 
