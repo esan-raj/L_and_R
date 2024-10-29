@@ -2,7 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.login_page, name='login'),  # Default route
+    path('',views.index, name = 'index'),
+    path('login', views.login_page, name='login'),  # Default route
     path('form/', views.form_page, name='form_page'),
     path('process-input/', views.process_input, name='process_input'),
     path('captcha_site/', views.captcha_view, name='captcha_view'),

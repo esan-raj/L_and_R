@@ -531,3 +531,5 @@ def claim_paid_data(request):
 
     return HttpResponse("Invalid request method.")
 
+def index (request):
+    return render(request,'LR/index.html')
