@@ -7,6 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_exempt
+
 from .scraping import *
 from django.contrib import messages
 from django.conf import settings
@@ -18,6 +20,7 @@ from django.contrib.auth import get_user_model
 from .models import AppUser
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import logout as auth_logout
+from django.http import JsonResponse
 
 AppUser = get_user_model()
 # Singleton pattern for WebDriver
@@ -85,6 +88,7 @@ def register(request):
         email_address = request.POST.get('email_address')
         organization = request.POST.get('organization')
         address = request.POST.get('address')
+        doj = request.POST.get('doj')
 
         # Password matching checks
         if password != password_confirm:
@@ -117,7 +121,7 @@ def register(request):
             email_address=email_address,
             organization=organization,
             address=address,
-            date_of_joining=timezone.now()
+            date_of_joining=doj
         )
 
         # Hash passwords before saving
@@ -346,7 +350,7 @@ def process(request):
         # Solve captcha and input form details
         # captcha_solve(driver, captcha)
         input_case_type(driver, case_type)
-        input_scheme(driver, scheme)
+        # input_scheme(driver, scheme)
 
         # Initialize message variable
         message = ""
@@ -533,3 +537,23 @@ def claim_paid_data(request):
 
 def index (request):
     return render(request,'LR/index.html')
+# @csrf_exempt
+
+def refresh(request):
+    if request.method == 'GET':  # Or 'POST' if you're using POST
+        try:
+            # Initialize the WebDriver instance and perform the captcha refresh
+            driver = WebDriverSingleton.get_instance()
+            refresh_captcha(driver)  # Call the Selenium function to refresh the captcha
+
+            # After refreshing, render the form page with updated captcha
+            return render(request, 'LR/form.html', {'MEDIA_URL': settings.MEDIA_URL})
+
+        except Exception as e:
+            # Catch any exceptions from Selenium or other errors
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+    else:
+        # Return an error if the request method is not allowed
+        return JsonResponse({"success": False, "error": "Invalid request method."}, status=405)
+

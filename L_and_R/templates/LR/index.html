@@ -73,7 +73,27 @@
             transform: scale(1.1);
             border: 2px solid rgba(255, 215, 0, 0.6);
         }
+        .register-btn {
+            background-color: #d4af37;
+            color: #111;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 10;
+        }
 
+        .register-btn:hover {
+            background-color: #b88f2b;
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.7);
+            transform: scale(1.1);
+            border: 2px solid rgba(255, 215, 0, 0.6);
+        }
         .carousel-container {
             display: flex;
             justify-content: center;
@@ -191,8 +211,9 @@
 <body>
 
     <header>
-        <img src="/media/MediPort-6QONReuz_-transformed.jpeg" alt="MEDIPORT" class="logo">
+        <img src="/media/MediPort-6QONReuz_-transformed.jpeg" alt="MEDIPORT" class="logo" onclick="window.location.href='{ url 'index' }" style="cursor: pointer;">
         <button class="login-btn" onclick="window.location.href='{% url 'login' %}'">Login</button>
+        <button class="register-btn" onclick="window.location.href='{% url 'register' %}'">Register</button>
 
     </header>
 

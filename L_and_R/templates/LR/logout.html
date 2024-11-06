@@ -46,7 +46,7 @@
                 // Redirect to the login page after countdown ends
                 if (countdown < 0) {
                     clearInterval(timerInterval); // Clear the interval
-                    window.location.href = "{% url 'login' %}"; // Redirect to login page
+                    window.location.href = "{% url 'index' %}"; // Redirect to login page
                 }
             }
 

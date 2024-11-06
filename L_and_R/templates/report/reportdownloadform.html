@@ -1,0 +1,12 @@
+{ extends 'report/base.html'}
+
+{% block title %}Report Download form{% endblock %}
+{% block navbar_items %}
+    <li><a href="{% url 'dashboard_report' %}">Dashboard</a></li>
+    <li><a href="{% url 'profile_report' %}">Profile</a></li>
+    <li><a href="{% url 'close_report' %}">Logout</a></li>
+{% endblock %}
+
+{% block content %}
+<h1> Report download form</h1>
+{% endblock %}

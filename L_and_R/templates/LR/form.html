@@ -70,6 +70,7 @@
             <div class="captcha">
                 <img src="{{ MEDIA_URL }}captchas/captcha_image.jpg" alt="Captcha Image" style="width: 127px;">
                 <input type="text" id="captchaInput" name="captchaInput" required>
+
             </div>
             <div class="d-grid gap-2 d-md-block">
                 <button id="downloadButton" class="btn btn-primary" type="submit">Search & Download</button>
@@ -80,6 +81,9 @@
                 <div id="progressBar" class="progress-bar">0%</div>
             </div>
         </form>
+        <div class="refresh_container">
+            <a href = "{% url 'refresh' %}">Refresh</a>
+        </div>
     </div>
 {% endblock %}
 
@@ -147,6 +151,8 @@
 {% endblock %}
 
 {% block extra_scripts %}
+
+</script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         flatpickr("#advFromDate", {

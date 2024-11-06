@@ -19,6 +19,8 @@ from django.db import connection # Import the AppUser model
 import xlrd  # For reading .xls files
 import xlwt
 from selenium.webdriver.common.action_chains import ActionChains
+from django.views.decorators.http import require_POST
+
 def fetch_site_username(app_username):
     try:
         # Fetch the user's website username (site_username) from the database
@@ -357,7 +359,6 @@ def download_excel1(driver, scheme, fromdate, todate):
 def process_excel_file_and_upload(file_path, table_name):
     try:
         # Read the Excel file without headers (header=None)
-        # drop_table(table_name)
         df = pd.read_excel(file_path, header=None, engine='xlrd')
 
         # Set the column names to be the second row
@@ -370,6 +371,9 @@ def process_excel_file_and_upload(file_path, table_name):
 
         # Reset index to start from 0 after row removal
         df.reset_index(drop=True, inplace=True)
+
+        # Replace NaN with None to handle missing values for MySQL
+        df = df.where(pd.notnull(df), None)
 
         # Get updated column names from the new header row
         columns = df.columns.tolist()
@@ -559,7 +563,7 @@ def fromdateinput(driver, fromdate):
         button.click()
         print("Button clicked successfully!")
     except Exception as e:
-        print()
+        print(e)
 
 
 def fromdateinputmis(driver, date_value):
@@ -605,6 +609,15 @@ def fromdateinputmis(driver, date_value):
     except Exception as e:
         print(f"Error while entering 'From Date': {str(e)}")
 def todateinput(driver, todate):
+    wait = WebDriverWait(driver, 5)  # Adjust timeout as needed
+    try:
+        # Wait for the button to be visible and clickable
+        button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.btn.btn-primary.bootbox-accept")))
+        button.click()
+        print("Button clicked successfully!")
+    except Exception as e:
+        print(e)
+
     to_date_input = driver.find_element(By.ID, 'advToDate')
 
     custom_date = todate
@@ -920,3 +933,17 @@ def download_excel_mis(driver, scheme, fromdate, todate):
     except TimeoutException:
         print("No records found on the page.")
         return "no_records"
+
+
+def refresh_captcha(driver):
+    time.sleep(2)  # Adjust this if necessary for your page load time
+
+    try:
+        # Find the refresh link element by ID and click it
+        refresh_link = driver.find_element(By.LINK_TEXT, 'refresh')
+        refresh_link.click()
+        print("Captcha refresh link clicked successfully.")
+        time.sleep(5)
+        captcha_download(driver)
+    except Exception as e:
+        print(f"An error occurred: {e}")
