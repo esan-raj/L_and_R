@@ -1,0 +1,182 @@
+{% extends 'LR/base.html' %}
+
+{% block title %}Report Download form{% endblock %}
+<!--{% block navbar_items %}-->
+<!--    <li><a href="{% url 'dashboard' %}">Dashboard</a></li>-->
+<!--    <li><a href="{% url 'profile' %}">Profile</a></li>-->
+<!--    <li><a href="{% url 'close' %}">Logout</a></li>-->
+<!--{% endblock %}-->
+
+{% block content %}
+<!--<h1> Report download form</h1>-->
+<style>
+        .container-report {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 100vh;
+            background-color: #f9f9f9;
+            padding: 20px;
+        }
+
+        .section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 45%;
+            text-align: center;
+        }
+
+        .section h2 {
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .checkbox-group {
+            text-align: left;
+            margin: 20px 0;
+        }
+
+        .checkbox-group input {
+            margin-right: 10px;
+        }
+
+        .payment-btn {
+            background-color: #28a745;
+        }
+
+        .payment-btn:hover {
+            background-color: #218838;
+        }
+    </style>
+
+<div class="container-report">
+    <!-- Free Report Section -->
+    <div class="section">
+        <h2>Free Report Download</h2>
+        <p>Click the button below to download a sample report for free.</p>
+        <button class="btn" id="freeDownloadButton" onclick="window.location.href='{% url 'reportdownload' %}'">Download Sample for Free</button>
+    </div>
+
+    <!-- Paid Report Section -->
+    <div class="section">
+        <h2>Paid Report Download</h2>
+        <p>Select the reports you want to download. Unlock access by completing payment.</p>
+
+        <div class="checkbox-group">
+    <label>
+        <input type="checkbox" name="report" value="Cases_Count_by_Status_and_Gender"> Cases Count by Status and Gender (Bar Graph)
+    </label><br>
+    <label>
+        <input type="checkbox" name="report" value="Cases_Count_by_Age"> Cases Count by Age (Bar Graph)
+    </label><br>
+    <label>
+        <input type="checkbox" name="report" value="Death_Counts_by_Gender"> Death Counts by Gender (Donut Chart)
+    </label><br>
+    <label>
+        <input type="checkbox" name="report" value="Death_Counts_by_Age"> Death Counts by Age (Bar Graph)
+    </label><br>
+    <label>
+        <input type="checkbox" name="report" value="Cases_Count_by_Gender"> Cases Count by Gender (Pie Chart)
+    </label><br>
+    <label>
+        <input type="checkbox" name="report" value="Cases_Count_by_Case_Type"> Cases Count by Case Type (Donut Chart)
+    </label><br>
+    <label>
+        <input type="checkbox" name="report" value="Cases_Count_by_Patient_District"> Cases Count by Patient's District (Bar Graph)
+    </label><br>
+    <label>
+        <input type="checkbox" name="report" value="Case_Status_Claim_Amount"> Case Status Claim Amount (Bar Graph)
+    </label><br>
+    <label>
+        <input type="checkbox" name="report" value="Detailed_Summary_of_Amounts"> Detailed Summary of Amounts related to Cases (Table)
+    </label><br>
+    <label>
+        <input type="checkbox" name="report" value="Combined_Report_Analysis_Summary"> Combined Report Analysis Summary
+    </label>
+    </div>
+<button class="btn payment-btn" id="paymentButton" onclick="redirectToPayment()">Proceed to Payment</button>
+<button class="btn" id="paidDownloadButton" onclick="downloadReports()">Download Selected Reports</button>
+    </div>
+</div>
+
+<!--<script>-->
+<!--    function redirectToPayment() {-->
+<!--        // Redirect to payment gateway-->
+<!--        window.location.href = "/payment-gateway"; // Replace with the actual payment gateway URL-->
+<!--    }-->
+
+<!--    // Simulate payment confirmation-->
+<!--    document.addEventListener("DOMContentLoaded", function() {-->
+<!--        const urlParams = new URLSearchParams(window.location.search);-->
+<!--        if (urlParams.get("payment") === "success") {-->
+<!--            // Enable checkboxes and download button-->
+<!--            document.querySelectorAll('.checkbox-group input').forEach(checkbox => {-->
+<!--                checkbox.disabled = false;-->
+<!--            });-->
+<!--            document.getElementById("paidDownloadButton").disabled = false;-->
+<!--        }-->
+<!--    });-->
+<!--</script>-->
+<script>
+    function downloadReports() {
+        // Get all checked checkboxes
+        const selectedReports = Array.from(document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked'))
+            .map(checkbox => checkbox.value);
+
+        // If no checkboxes are selected, alert the user
+        if (selectedReports.length === 0) {
+            alert("Please select at least one report.");
+            return;
+        }
+
+        // Send data to the backend using Fetch API
+        fetch('/download-reports/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken() // Include CSRF token for Django
+            },
+            body: JSON.stringify({ reports: selectedReports })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Reports are being prepared for download.');
+                } else {
+                    alert('Failed to process your request.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+    }
+
+    // Function to retrieve CSRF token from cookies
+    function getCSRFToken() {
+        const csrfToken = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+        return csrfToken;
+    }
+</script>
+
+{% endblock %}

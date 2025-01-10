@@ -19,6 +19,7 @@ from django.db import connection # Import the AppUser model
 import xlrd  # For reading .xls files
 import xlwt
 from selenium.webdriver.common.action_chains import ActionChains
+import platform
 from django.views.decorators.http import require_POST
 
 def fetch_site_username(app_username):
@@ -48,7 +49,15 @@ def fetch_site_password(app_username):
 def initialize_driver():
     download_dir = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
     base_dir = os.path.dirname(os.path.abspath(__file__))  # Get the directory of the current file
-    driver_path = os.path.join(base_dir, 'drivers', 'chromedriver.exe')
+    if platform.system() == "Windows":
+        print(platform.system())
+        driver_path = os.path.join(base_dir, 'drivers', 'chromedriver.exe')  # Set your Windows ChromeDriver path here
+    elif platform.system() == "Linux":
+        print(platform.system())
+        driver_path = os.path.join(base_dir, 'drivers', 'chromedriver')  # Set your Linux ChromeDriver path here
+    else:
+        raise Exception("Unsupported OS. This script only supports Windows and Linux.")
+    # driver_path = os.path.join(base_dir, 'drivers', 'chromedriver.exe')
     service = Service(driver_path)
 
     # Specify the directory where you want to save the downloaded Excel files

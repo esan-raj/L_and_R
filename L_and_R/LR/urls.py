@@ -9,7 +9,7 @@ urlpatterns = [
     path('process-input/', views.process_input, name='process_input'),
     path('captcha_site/', views.captcha_view, name='captcha_view'),
     path('register/', views.register, name='register'),
-    path('login/', views.login_view, name='login'),
+    path('login/', views.login_view, name='login_view'),
     path('dashboard/',views.dashboard_view, name = 'dashboard'),
     path('update-app-password/', views.update_app_password, name='update_app_password'),
     path('update-site-password/', views.update_site_password, name='update_site_password'),
@@ -24,5 +24,7 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('claimpaid/', views.claimpaid, name='claimpaid'),
     path('claimpaiddata/', views.claim_paid_data, name='claimpaiddata'),
+    path('report-download-form/', views.reportdownloadform, name='reportdownloadform'),
+    path('report-download/', views.report_download, name='reportdownload'),
 
 ]

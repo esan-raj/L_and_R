@@ -1,32 +1,24 @@
 {% extends 'LR/base.html' %}
 
-{% block title %}Form Title{% endblock %}
-{% block navbar_items %}
-    <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
-    <li><a href="{% url 'profile' %}">Profile</a></li>
-    <li><a href="{% url 'close' %}">Logout</a></li>
-{% endblock %}
+{% block title %}Data Update{% endblock %}
+
 {% block content %}
     <div class="container-casesearch">
-        <form action="{% url 'process_input' %}" method="POST" onsubmit="return validateForm()">
-            {% csrf_token %}
-            <!-- Form Elements -->
-            <!-- Case Type Dropdown -->
+        <form id="caseSearchForm">
             <div class="casetype-container">
                 <label for="caseType">Case Type:</label>
-                <select class="form-select" id="caseType" name="caseType" required>
-                    <option value="">--Select any one--</option>
+                <select id="caseType" name="caseType" required>
+                    <option value="" selected>--Select any one--</option>
                     <option value="All">All</option>
                     <option value="Insurer">Insurer</option>
                     <option value="Trust">Trust</option>
                 </select>
             </div>
 
-            <!-- Scheme Dropdown -->
             <div class="scheme-container">
                 <label for="Scheme">Scheme:</label>
-                <select class="form-select" id="Scheme" name="Scheme" required>
-                    <option value="-1">--Select Scheme--</option>
+                <select id="Scheme" name="Scheme" required>
+                    <option value="-1" selected>--Select Scheme--</option>
                     <option value="ALL">ALL</option>
                     <option value="PMJ">AB-PMJAY(PMJ)</option>
                     <option value="R">AB-PMJAY(R)</option>
@@ -43,117 +35,176 @@
                 </select>
             </div>
 
-            <!-- Date Inputs -->
             <div class="date-input-container">
-                <div class="col-md-3">
-                    <label>From Date</label>
-                    <input type="text" id="advFromDate" name="advFromDate" class="form-control" placeholder="dd/mm/yyyy">
+                <div>
+                    <label for="advFromDate">From Date</label>
+                    <input type="text" id="advFromDate" name="advFromDate" placeholder="dd/mm/yyyy" readonly>
                 </div>
-                <div class="col-md-3">
-                    <label>To Date</label>
-                    <input type="text" id="advToDate" name="advToDate" class="form-control" placeholder="dd/mm/yyyy">
+                <div>
+                    <label for="advToDate">To Date</label>
+                    <input type="text" id="advToDate" name="advToDate" placeholder="dd/mm/yyyy" readonly>
                 </div>
             </div>
 
-            <!-- Record Period Dropdown -->
             <div class="record-period">
                 <label for="recordPeriod">Record Period:</label>
-                <select class="form-select" id="recordPeriod" name="recordPeriod">
-                    <option value="">--Select--</option>
+                <select id="recordPeriod" name="recordPeriod">
+                    <option value="" selected>--Select--</option>
                     <option value="90">Last 3 Months</option>
                     <option value="180">Last 6 Months</option>
                     <option value="365">Last 1 Year</option>
                 </select>
             </div>
 
-            <!-- Captcha and Submit -->
             <div class="captcha">
-                <img src="{{ MEDIA_URL }}captchas/captcha_image.jpg" alt="Captcha Image" style="width: 127px;">
+                <img id="captchaImage" src="{{ MEDIA_URL }}captchas/captcha_image.jpg" alt="Captcha Image" style="width: 127px;">
                 <input type="text" id="captchaInput" name="captchaInput" required>
-
-            </div>
-            <div class="d-grid gap-2 d-md-block">
-                <button id="downloadButton" class="btn btn-primary" type="submit">Search & Download</button>
             </div>
 
-            <!-- Progress Bar -->
-            <div class="progress-container">
-                <div id="progressBar" class="progress-bar">0%</div>
+            <div class="button-container">
+                <button type="submit" id="submitButton">Search & Download</button>
+            </div>
+
+            <div class="progress-container" style="display: none;">
+                <div id="progressBar" class="progress-bar">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                <span id="progressText">0%</span>
             </div>
         </form>
-        <div class="refresh_container">
-            <a href = "{% url 'refresh' %}">Refresh</a>
+
+        <div class="refresh-container">
+            <button id="refreshButton" onclick="window.location.href='{% url 'refresh' %}'">Refresh</button>
         </div>
     </div>
-{% endblock %}
-
-{% block extra_styles %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <style>
-<!--        .flatpickr-months{-->
-<!--            width:100px;-->
-<!--            height:100px;-->
-<!--        }-->
-        /* Scoping form-specific styles */
-        .container-casesearch {
-            max-width: 600px;
-            width: 100%;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            margin: 0 auto;
-        }
-
-        /* Ensuring no conflict with global reset */
-        .container-casesearch * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* Form specific layout */
-        .date-input-container {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-        }
-
-        .col-md-3 {
-            width: 48%;
-        }
-
-        /* Progress Bar */
-        .progress-container {
-            width: 100%;
-            background-color: #f3f3f3;
-            margin-top: 20px;
-            height: 30px;
-            border-radius: 5px;
-            display: none;
-        }
-
-        .progress-bar {
-            height: 100%;
-            width: 0;
-            background-color: #4caf50;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            transition: width 0.4s ease;
-        }
-
-    </style>
-{% endblock %}
-
-{% block extra_scripts %}
-
-</script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+   <style>
+       body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+}
+
+.container-casesearch {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.casetype-container,
+.scheme-container,
+.date-input-container,
+.record-period,
+.captcha,
+.button-container {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+select {
+    display: block; /* Proper behavior */
+}
+select option {
+display:none;
+}
+input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.date-input-container {
+    display: flex;
+    gap: 20px;
+}
+
+.date-input-container > div {
+    flex: 1;
+}
+
+.captcha {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.captcha img {
+    width: 127px;
+    height: auto;
+}
+
+.captcha input {
+    flex: 1;
+}
+
+button {
+    background-color: #007bff;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.progress-container {
+    display:none;
+    margin-top: 20px;
+}
+
+.progress-bar {
+    height: 20px;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: #4CAF50;
+    width: 0;
+    transition: width 0.5s ease-in-out;
+}
+
+.refresh-container {
+    margin-top: 20px;
+    text-align: right;
+}
+
+#refreshButton {
+    background-color: transparent;
+    color: #007bff;
+    text-decoration: underline;
+    padding: 0;
+}
+
+#refreshButton:hover {
+    color: #0056b3;
+}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         flatpickr("#advFromDate", {
             dateFormat: "d/m/Y",  // Set format to dd/mm/yyyy
@@ -188,7 +239,7 @@
                 toDate.disabled = isRecordPeriodSelected;
             });
         });
-        document.getElementById("downloadButton")?.addEventListener("click", function(event) {
+        document.getElementById("submitButton")?.addEventListener("click", function(event) {
             document.querySelector(".progress-container").style.display = "block";
             let progressBar = document.getElementById("progressBar");
             let width = 0;
@@ -214,3 +265,4 @@
         });
     </script>
 {% endblock %}
+

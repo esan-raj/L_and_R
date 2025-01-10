@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
-
+from .report import *
 from .scraping import *
 from django.contrib import messages
 from django.conf import settings
@@ -23,6 +23,8 @@ from django.contrib.auth import logout as auth_logout
 from django.http import JsonResponse
 
 AppUser = get_user_model()
+
+
 # Singleton pattern for WebDriver
 class WebDriverSingleton:
     _instance = None
@@ -69,9 +71,6 @@ class WebDriverSingleton:
         """
         cls.quit_instance()  # Terminate the current WebDriver session
         cls._instance = initialize_driver()  # Create a new WebDriver instance
-
-
-
 
 
 def register(request):
@@ -169,6 +168,8 @@ def login_view(request):
 
     # Render the login page for GET requests
     return render(request, 'LR/login.html')
+
+
 @login_required
 def dashboard_view(request):
     app_username = request.session.get('app_username')
@@ -177,29 +178,31 @@ def dashboard_view(request):
     driver = WebDriverSingleton.refresh_instance()
     # Render the dashboard
     return render(request, 'LR/dashboard.html')
+
+
 @login_required
 def download_data(request):
-    if request.method == 'POST':
-        app_username = request.session.get('app_username')
+    app_username = request.session.get('app_username')
 
-        if not app_username:
-            return redirect('login')
+    if not app_username:
+        return redirect('login')
 
-        # Fetch the site credentials using the app_username
-        site_username = fetch_site_username(app_username)
-        site_password = fetch_site_password(app_username)
+    # Fetch the site credentials using the app_username
+    site_username = fetch_site_username(app_username)
+    site_password = fetch_site_password(app_username)
 
-        if not site_username or not site_password:
-            return HttpResponse("Site credentials not found or invalid.")
+    if not site_username or not site_password:
+        return HttpResponse("Site credentials not found or invalid.")
 
-        driver = WebDriverSingleton.get_instance()
-        # Start the WebDriver process
-        login_site(driver, site_username, site_password)
+    driver = WebDriverSingleton.get_instance()
+    # Start the WebDriver process
+    login_site(driver, site_username, site_password)
 
-        # After processing, render form.html
-        return render(request, 'LR/form.html', {'MEDIA_URL': settings.MEDIA_URL})
+    # After processing, render form.html
+    return render(request, 'LR/form.html', {'MEDIA_URL': settings.MEDIA_URL})
 
-    return HttpResponse("Invalid request method.")
+
+# return HttpResponse("Invalid request method.")
 @login_required
 def update_app_password_process(request):
     if request.method == 'POST':
@@ -217,6 +220,7 @@ def update_app_password_process(request):
             return render(request, 'LR/update_app_password.html', {'error': 'App username not found.'})
 
     return redirect('login')
+
 
 @login_required
 def update_site_password_process(request):
@@ -236,6 +240,7 @@ def update_site_password_process(request):
 
     return redirect('login')
 
+
 @login_required
 def process_input(request):
     if request.method == 'POST':
@@ -250,49 +255,54 @@ def process_input(request):
         request.session['fromdate'] = fromdate
         request.session['todate'] = todate
 
-        print(fromdate)
-        print(todate)
+        # print(fromdate)
+        # print(todate)
         # Start WebDriver instance
-        driver = WebDriverSingleton.get_instance()
+        # driver = WebDriverSingleton.get_instance()
 
         # Solve captcha and input form details
-        captcha_solve(driver, captcha)
+        # captcha_solve(driver, captcha)
 
-        captcha_image_path = os.path.join(settings.BASE_DIR, 'L_and_R/media/captchas/captcha_image.jpg')  # Replace with the actual path to the captcha image
+        captcha_image_path = os.path.join(settings.BASE_DIR,'L_and_R/media/captchas/captcha_image.jpg')  # Replace with the actual path to the captcha image
         if os.path.exists(captcha_image_path):
             try:
                 os.remove(captcha_image_path)
                 print(f"Captcha image {captcha_image_path} deleted successfully!")
             except OSError as e:
                 print(f"Error deleting captcha image: {e}")
-        input_case_type(driver, case_type)
-
+        # input_case_type(driver, case_type)
+        #
         # Initialize message variable
-        message = ""
-        # try:
-        if record:  # If recordPeriod is filled, download with record
-            print("Record period found, downloading with record.")
-            status = download_excel(driver, scheme, record)
-        else:  # If recordPeriod is not filled, download with selected_option
-            print("Record period not found, processing dropdown options.")
-                # Get the intervals based on fromdate and todate
-            intervals = get_90_day_intervals(fromdate, todate)
-                # Assuming process_dates_and_download handles dropdown options
-            status = process_dates_and_download(driver, intervals, scheme, request)
-
-                # For simplicity, assuming this function handles the download_excel internally
-                # and processes the selected_option.
-
-                # Set message based on the status (if available from process_dates_and_download)
-                  # Assuming this is set based on the process
-
-            # Handle status messages based on download_excel results
-        if status == "no_records":
-            message = "No records found."
-        elif status == "error":
-            message = "An error occurred during processing."
-        else:
-            message = "File loaded successfully. Please download it before moving ahead"
+        message = f"""Scheme = {scheme}<br>
+                        Case Type = {case_type}<br>
+                        Record = {record}<br>
+                        captcha = {captcha}<br>
+                        from date = {fromdate}<br>
+                        to date = {todate}"""
+        # # try:
+        # if record:  # If recordPeriod is filled, download with record
+        #     print("Record period found, downloading with record.")
+        #     status = download_excel(driver, scheme, record)
+        # else:  # If recordPeriod is not filled, download with selected_option
+        #     print("Record period not found, processing dropdown options.")
+        #     # Get the intervals based on fromdate and todate
+        #     intervals = get_90_day_intervals(fromdate, todate)
+        #     # Assuming process_dates_and_download handles dropdown options
+        #     status = process_dates_and_download(driver, intervals, scheme, request)
+        #
+        #     # For simplicity, assuming this function handles the download_excel internally
+        #     # and processes the selected_option.
+        #
+        #     # Set message based on the status (if available from process_dates_and_download)
+        #     # Assuming this is set based on the process
+        #
+        #     # Handle status messages based on download_excel results
+        # if status == "no_records":
+        #     message = "No records found."
+        # elif status == "error":
+        #     message = "An error occurred during processing."
+        # else:
+        #     message = "File loaded successfully. Please download it before moving ahead"
         # except (ConnectionAbortedError, BrokenPipeError):
         #     print("Client disconnected prematurely.")
         #     message = "Processing was interrupted due to a client disconnection."
@@ -304,31 +314,45 @@ def process_input(request):
 
 
 def login_page(request):
-    return render(request, 'LR/login.html',{'user': request.user})
+    return render(request, 'LR/login.html', {'user': request.user})
+
+
 #
 @login_required
 def form_page(request):
     return render(request, 'LR/form.html')
+
+
 @login_required
 def captcha_view(request):
-    return render(request,'LR/form.html')
+    return render(request, 'LR/form.html')
+
+
 @login_required
 def update_app_password(request):
     # Your logic for updating the app password
     return render(request, 'LR/update_app_password.html')
+
+
 @login_required
 def update_site_password(request):
     # Your logic for updating the site password
     return render(request, 'LR/update_site_password.html')
+
+
 @login_required
 def download_again(request):
-    return render(request,'LR/form2.html')
+    return render(request, 'LR/form2.html')
+
+
 @login_required
 def profile(request):
     user = request.user
     print(user.first_name, user.last_name, user.app_username, user.phone_number, user.email_address)  # Debugging
 
     return render(request, 'LR/profile.html', {'user': user})
+
+
 @login_required
 def process(request):
     if request.method == 'POST':
@@ -384,12 +408,14 @@ def process(request):
 
     return HttpResponse("Invalid request method.")
 
+
 def close(request):
     driver = WebDriverSingleton.get_instance()
     close_driver(driver)
     auth_logout(request)
     request.session.flush()
-    return render(request,'LR/logout.html')
+    return render(request, 'LR/logout.html')
+
 
 @login_required
 def serve_downloaded_files(request):
@@ -405,6 +431,7 @@ def serve_downloaded_files(request):
             return HttpResponse("File not found.", status=404)
     else:
         return HttpResponse("No files available for download.", status=404)
+
 
 @login_required
 def profile_view(request):
@@ -448,6 +475,7 @@ def profile_view(request):
     # If it's a GET request, just render the profile form with current user data
     return render(request, 'LR/profile.html', {'user': user})
 
+@login_required
 def claimpaid(request):
     if request.method == 'POST':
         app_username = request.session.get('app_username')
@@ -470,6 +498,8 @@ def claimpaid(request):
         return render(request, 'LR/claim_paid_report.html', {'MEDIA_URL': settings.MEDIA_URL})
 
     return HttpResponse("Invalid request method.")
+
+@login_required
 def claim_paid_data(request):
     if request.method == 'POST':
         # Get form inputs
@@ -515,7 +545,7 @@ def claim_paid_data(request):
             intervals = get_90_day_intervals_mis(fromdate, todate)
 
             # Process MIS report based on the intervals and scheme
-            status = mis_report(driver, scheme, intervals,request)
+            status = mis_report(driver, scheme, intervals, request)
 
             # Set appropriate message based on status
             if status == "no_records":
@@ -535,10 +565,13 @@ def claim_paid_data(request):
 
     return HttpResponse("Invalid request method.")
 
-def index (request):
-    return render(request,'LR/index.html')
-# @csrf_exempt
 
+def index(request):
+    return render(request, 'LR/index.html')
+
+
+# @csrf_exempt
+@login_required
 def refresh(request):
     if request.method == 'GET':  # Or 'POST' if you're using POST
         try:
@@ -556,4 +589,14 @@ def refresh(request):
     else:
         # Return an error if the request method is not allowed
         return JsonResponse({"success": False, "error": "Invalid request method."}, status=405)
+@login_required
+def reportdownloadform(request):
 
+    return render(request,'LR/reportdownloadform.html')
+@login_required
+def report_download(request):
+    message = main()
+    return render(request,'LR/Success.html', {'message': message})
+
+# @login_required
+# def

@@ -1,129 +1,164 @@
 {% extends 'LR/base.html' %}
 
 {% block title %}Register{% endblock %}
-{% block navbar_items %}
-    <li><a href="{% url 'login' %}">Login</a></li>
-{% endblock %}
 {% block content %}
-    <div class="registration-form">
-        <h2>Register</h2>
-        <form method="POST" action="{% url 'register' %}">
-    {% csrf_token %}
+    <section class="banner-area other-page">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1>Sign Up</h1>
+                    <a href="{% url 'index' %}">Home</a> <span>|</span> <a href="contact.html">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Banner Area End -->
+    <!-- Registration Form Starts -->
+<section class="registration-form section-padding">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 offset-lg-3">
+                <div class="form-box">
+                    <h2 class="text-center mb-4">Sign Up</h2>
+                    <form id="registrationForm" method="post" action="{% url 'register' %}">
+                        <div class="form-group">
+                            <label for="first_name">First Name - Enter First Name</label>
+                            <input type="text" id="first_name" name="first_name" value="{{ first_name }}" placeholder="Enter First Name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="last_name">Last Name - Enter Last Name</label>
+                            <input type="text" id="last_name" name="last_name" value="{{ last_name }}" placeholder="Enter Last Name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="app_username">App Username - Enter App Username</label>
+                            <input type="text" id="app_username" name="app_username"  value="{{ app_username }}"  placeholder="Enter App Username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="app_password">App Password - Enter App Password</label>
+                            <input type="password" id="app_password" name="app_password"  value="{{ app_password }}" placeholder="Enter App Password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="app_password_confirm">Confirm App Password - Re-enter App Password</label>
+                            <input type="password" id="app_password_confirm" name="app_password_confirm" placeholder="Re-enter App Password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="site_username">Site Username - Enter Site Username</label>
+                            <input type="text" id="site_username" name="site_username"  value="{{ site_username }}" placeholder="Enter Site Username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="site_password">Site Password - Enter Site Password</label>
+                            <input type="password" id="site_password" name="site_password" value="{{ site_password }}"  placeholder="Enter Site Password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="site_password_confirm">Confirm Site Password - Re-enter Site Password</label>
+                            <input type="password" id="site_password_confirm" name="site_password_confirm" placeholder="Re-enter Site Password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="organization">Organization - Enter Organization</label>
+                            <input type="text" id="organization" name="organization" value="{{ organization }}" placeholder="Enter Organization" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone_number">Phone Number - Enter Phone Number</label>
+                            <input type="tel" id="phone_number" name="phone_number" value="{{ phone_number }}" placeholder="Enter Phone Number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email_address">Email Address - Enter Email Address</label>
+                            <input type="email" id="email_address" name="email_address" placeholder="Enter Email Address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Address - Enter Address</label>
+                            <input type="text" id="address" name="address" value="{{ email_address }}" placeholder="Enter Address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="doj">Date of Joining - Select Date</label>
+                            <input type="date" id="doj" name="doj" value="{{ doj }}" placeholder="Select Date" required>
+                        </div>
+                        <!-- <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="is_active"> Is Active - Check if Active
+                            </label>
+                        </div> -->
+                        <div class="form-group text-center">
+                            <button type="submit" class="template-btn">Sign Up</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-    <div>
-        <label for="first_name">First Name:</label>
-        <input type="text" name="first_name" value="{{ first_name }}" id="first_name" required>
-    </div>
+<style>/* Form Box Styl ing */
+    .form-box {
+        border: 1px solid #ffffff;
+        border-radius: 8px;
+        padding: 20px;
+        background-color: #f9f9f9;
+    }
 
-    <div>
-        <label for="last_name">Last Name:</label>
-        <input type="text" name="last_name" value="{{ last_name }}" id="last_name" required>
-    </div>
+    /* Form Group Styling */
+    .form-group {
+        margin-bottom: 15px;
+    }
 
-    <div>
-        <label for="app_username">App Username:</label>
-        <input type="text" name="app_username" value="{{ app_username }}" id="app_username" required>
-    </div>
+    /* Label Styling */
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
 
-    <div>
-        <label for="app_password">App Password:</label>
-        <input type="password" name="app_password" value="{{ app_password }}" id="app_password" required>
-    </div>
+    /* Input Field Styling */
+    .form-group input[type="text"],
+    .form-group input[type="password"],
+    .form-group input[type="email"],
+    .form-group input[type="tel"],
+    .form-group input[type="date"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ffffff;
+        border-radius: 4px;
+    }
 
-    <div>
-        <label for="app_password_confirm">Confirm App Password:</label>
-        <input type="password" name="app_password_confirm" id="app_password_confirm" required>
-    </div>
+    /* Button Styling */
+    .template-btn {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
 
-    <div>
-        <label for="site_username">Site Username:</label>
-        <input type="text" name="site_username" value="{{ site_username }}" id="site_username" required>
-    </div>
+    .template-btn:hover {
+        background-color: #0056b3;
+    }</style>
 
-    <div>
-        <label for="site_password">Site Password:</label>
-        <input type="password" name="site_password" value="{{ site_password }}" id="site_password" required>
-    </div>
+<script>
+    document.getElementById('registrationForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the default form submission
 
-    <div>
-        <label for="site_password_confirm">Confirm Site Password:</label>
-        <input type="password" name="site_password_confirm" id="site_password_confirm" required>
-    </div>
+        // Validate App Password and Confirm App Password
+        const appPassword = document.querySelector('input[name="app_password"]').value;
+        const appPasswordConfirm = document.querySelector('input[name="app_password_confirm"]').value;
+        if (appPassword !== appPasswordConfirm) {
+            alert('App Passwords do not match!');
+            return;
+        }
 
-    <div>
-        <label for="phone_number">Phone Number:</label>
-        <input type="text" name="phone_number" value="{{ phone_number }}" id="phone_number" required>
-    </div>
+        // Validate Site Password and Confirm Site Password
+        const sitePassword = document.querySelector('input[name="site_password"]').value;
+        const sitePasswordConfirm = document.querySelector('input[name="site_password_confirm"]').value;
+        if (sitePassword !== sitePasswordConfirm) {
+            alert('Site Passwords do not match!');
+            return;
+        }
 
-    <div>
-        <label for="email_address">Email Address:</label>
-        <input type="email" name="email_address" value="{{ email_address }}" id="email_address" required>
-    </div>
-
-    <div>
-        <label for="address">Address:</label>
-        <textarea name="address" id="address" required>{{ address }}</textarea>
-    </div>
-
-    <div>
-        <label for="organization">Organization:</label>
-        <input type="text" name="organization" value="{{ organization }}" id="organization" required>
-    </div>
-    <div>
-        <label for="doj">Date of Joining (PMJAY):</label>
-        <input type="date" name="doj" value="{{ doj }}" id="doj" required>
-    </div>
-    <button type="submit">Register</button>
-</form>
-
-    </div>
+        // If validation passes, submit the form
+        alert('Form submitted successfully!');
+        // Uncomment the line below to submit the form programmatically
+        // this.submit();
+    });
+</script>
 {% endblock %}
 
-{% block extra_styles %}
-    <style>
-        .registration-form {
-            width: 300px;
-            margin: 50px auto;
-            padding: 30px;
-            background: #fff;
-            border: 1px solid #ddd;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 5px;
-        }
-
-        .registration-form h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .registration-form form {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .registration-form form input,
-        .registration-form form select,
-        .registration-form form textarea {
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        .registration-form form button {
-            padding: 10px;
-            border: none;
-            background-color: #28a745;
-            color: #fff;
-            font-size: 18px;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
-        }
-
-        .registration-form form button:hover {
-            background-color: #218838;
-        }
-    </style>
-{% endblock %}
