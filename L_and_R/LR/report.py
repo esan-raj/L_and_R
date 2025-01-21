@@ -125,7 +125,7 @@ class DataProcessor:
         fig.patches.append(border)
         plt.tight_layout()
         plt.savefig(output_file, bbox_inches='tight', pad_inches=0.5)
-        ###plt.show()
+        ### 
         print(f'Both the stacked bar plot and pivot table have been saved as {output_file}')
 
     # Function to add diagonal watermark
@@ -416,7 +416,7 @@ class DataProcessor:
         pdf_file_path = os.path.join(reports_folder, "combined_pivot_table_report.pdf")
         plt.tight_layout()
         plt.savefig(pdf_file_path, format='pdf', bbox_inches='tight', pad_inches=0.5)
-        # plt.show()  # Close the plot to avoid displaying it
+        #    # Close the plot to avoid displaying it
 
         print(f'Combined pivot tables saved as {pdf_file_path}')
         return pdf_file_path
@@ -532,7 +532,7 @@ class DataProcessor:
         # Save the combined figure as a PDF in the Reports folder
         pdf_file_path = os.path.join(reports_folder, "combined_counts_and_pivot_table.pdf")
         plt.savefig(pdf_file_path, bbox_inches='tight', pad_inches=0.5)
-        ##plt.show()  # Show the plot
+        ##   # Show the plot
 
         print(f'Report saved successfully at: {pdf_file_path}')
         return pdf_file_path
@@ -625,7 +625,7 @@ class DataProcessor:
         # Save the combined figure as a PDF in the Reports folder
         pdf_file_path = os.path.join(reports_folder, "death_counts_by_gender_and_table.pdf")
         plt.savefig(pdf_file_path, bbox_inches='tight', pad_inches=0.5)
-        ##plt.show()  # Show the plot
+        ##   # Show the plot
 
         print(f'Report saved successfully at: {pdf_file_path}')
         return pdf_file_path
@@ -696,7 +696,7 @@ class DataProcessor:
         # Save the combined figure as a single PDF file in the Reports folder
         pdf_file_path = os.path.join(reports_folder, "age_group_death_count_and_table.pdf")
         plt.savefig(pdf_file_path, bbox_inches='tight', pad_inches=0.5)
-        ##plt.show()
+        ## 
 
         print(f'Report saved successfully at: {pdf_file_path}')
         return pdf_file_path
@@ -769,7 +769,7 @@ class DataProcessor:
         # Save the combined figure as a PDF file in the Reports folder
         pdf_file_path = os.path.join(reports_folder, "age_group_cases_bar_table.pdf")
         plt.savefig(pdf_file_path, bbox_inches='tight', pad_inches=0.5)
-        ##plt.show()
+        ## 
 
         print(f'Report saved successfully at: {pdf_file_path}')
         return pdf_file_path
@@ -826,7 +826,7 @@ class DataProcessor:
         # Save the figure as a PDF in the Reports folder
         pdf_file_path = os.path.join(reports_folder, "Gender_and_Table.pdf")
         fig.savefig(pdf_file_path, bbox_inches='tight', pad_inches=0.5, format='pdf')
-        ##plt.show()
+        ## 
 
         print(f'Report saved successfully at: {pdf_file_path}')
         return pdf_file_path
@@ -922,7 +922,7 @@ class DataProcessor:
         # Save the figure as a PDF in the Reports folder
         pdf_file_path = os.path.join(reports_folder, "Case_Type_Distribution_and_Table.pdf")
         fig.savefig(pdf_file_path, bbox_inches='tight', pad_inches=0.5, format='pdf')
-        ##plt.show()
+        ## 
 
         print(f'Report saved successfully at: {pdf_file_path}')
         return pdf_file_path
@@ -1326,45 +1326,44 @@ def main(selected_reports=None, sample=False):
         # Generate a free sample report
         if sample:
             output_files.append(processor.generate_sample_report(df))
-
-        # Process selected reports
-        for report_name in selected_reports:
-            method_name = METHOD_MAP.get(report_name)
-            if method_name and hasattr(processor, method_name):
-                method = getattr(processor, method_name)
-                try:
-                    output_file = method(df)
-                    if output_file:  # Only append if the output_file is not None
-                        output_files.append(output_file)
-                    else:
-                        print(f"Method {method_name} did not return a valid file path.")
-                except Exception as e:
-                    print(f"An error occurred while executing {method_name}: {e}")
-            else:
-                print(f"Method {method_name} not found in DataProcessor.")
-
-        # Combine PDFs if applicable
-        pdf_files = [file for file in output_files if file.endswith('.pdf')]
-        if pdf_files:
-            combined_pdf_path = processor.combine_pdfs(pdf_files)
-            if combined_pdf_path:
-                print(f"Combined PDF saved at {combined_pdf_path}")
-
-                # Remove individual PDFs
-                for pdf in pdf_files:
-                    if pdf != combined_pdf_path:  # Skip the combined PDF
-                        try:
-                            os.remove(pdf)
-                            print(f"{pdf} is deleted successfully")
-                        except Exception as e:
-                            print(f"Error deleting {pdf}: {e}")
-
-                # Update output_files to only include the combined PDF and non-PDF files
-                output_files = [file for file in output_files if not file.endswith('.pdf')]
-                output_files.append(combined_pdf_path)
-
         else:
-            print("No valid PDFs to combine.")
+            # Process selected reports
+            for report_name in selected_reports:
+                method_name = METHOD_MAP.get(report_name)
+                if method_name and hasattr(processor, method_name):
+                    method = getattr(processor, method_name)
+                    try:
+                        output_file = method(df)
+                        if output_file:  # Only append if the output_file is not None
+                            output_files.append(output_file)
+                        else:
+                            print(f"Method {method_name} did not return a valid file path.")
+                    except Exception as e:
+                        print(f"An error occurred while executing {method_name}: {e}")
+                else:
+                    print(f"Method {method_name} not found in DataProcessor.")
+
+            # Combine PDFs if applicable
+            pdf_files = [file for file in output_files if file.endswith('.pdf')]
+            if pdf_files:
+                combined_pdf_path = processor.combine_pdfs(pdf_files)
+                if combined_pdf_path:
+                    print(f"Combined PDF saved at {combined_pdf_path}")
+
+                    # Remove individual PDFs
+                    for pdf in pdf_files:
+                        if pdf != combined_pdf_path:  # Skip the combined PDF
+                            try:
+                                os.remove(pdf)
+                                print(f"{pdf} is deleted successfully")
+                            except Exception as e:
+                                print(f"Error deleting {pdf}: {e}")
+
+                    # Update output_files to only include the combined PDF and non-PDF files
+                    output_files = [file for file in output_files if not file.endswith('.pdf')]
+                    output_files.append(combined_pdf_path)
+            else:
+                print("No valid PDFs to combine.")
 
         # Create a zip file containing all output files
         zip_file_path = "Reports/Combined_Files.zip"
