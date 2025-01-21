@@ -1,28 +1,26 @@
 {% extends 'LR/base.html' %}
 
-{% block title %}Form Title{% endblock %}
-{% block navbar_items %}
-    <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
-    <li><a href="{% url 'profile' %}">Profile</a></li>
-    <li><a href="{% url 'close' %}">Logout</a></li>
-{% endblock %}
+{% block title %}Data Update{% endblock %}
+
 {% block content %}
-    <div class="container-casesearch">
-        <form action="{% url 'process' %}" method="POST" onsubmit="return validateCaptcha()">
+    <div class="container-caseSearch">
+        <form action="{% url 'process' %}" method="POST" id="caseSearchForm">
             {% csrf_token %}
-            <div class="casetype-container">
+            <div class="caseType-container ">
                 <label for="caseType">Case Type:</label>
-                <select class="form-select" id="caseType" name="caseType" required>
-                    <option value="">--Select any one--</option>
+                <select class="form-select " id="caseType" name="caseType" required>
+                    <option value="" selected>--Select any one--</option>
                     <option value="All">All</option>
                     <option value="Insurer">Insurer</option>
                     <option value="Trust">Trust</option>
                 </select>
             </div>
-            <div class="scheme-container">
+
+            <div class="scheme-container ">
                 <label for="Scheme">Scheme:</label>
                 <select class="form-select" id="Scheme" name="Scheme" required>
-                    <option value="-1">--Select Scheme--</option>
+                    <option value="-1" selected>--Select Scheme--</option>
+                    <option value="ALL">ALL</option>
                     <option value="PMJ">AB-PMJAY(PMJ)</option>
                     <option value="R">AB-PMJAY(R)</option>
                     <option value="P">DKBSBY(P)</option>
@@ -39,126 +37,160 @@
             </div>
 
             <div class="date-input-container">
-                <div class="col-md-3">
-                    <label>From Date</label>
-                    <input type="text" id="advFromDate" name="advFromDate" class="form-control" placeholder="dd/mm/yyyy">
+                <div>
+                    <label for="advFromDate">From Date</label>
+                    <input type="text" id="advFromDate" name="advFromDate" placeholder="dd/mm/yyyy" readonly>
                 </div>
-                <div class="col-md-3">
-                    <label>To Date</label>
-                    <input type="text" id="advToDate" name="advToDate" class="form-control" placeholder="dd/mm/yyyy">
+                <div>
+                    <label for="advToDate">To Date</label>
+                    <input type="text" id="advToDate" name="advToDate" placeholder="dd/mm/yyyy" readonly>
                 </div>
             </div>
 
-
             <div class="record-period">
                 <label for="recordPeriod">Record Period:</label>
-                <select class="form-select" id="recordPeriod" name="recordPeriod" required>
-                    <option value="-1">--Select--</option>
+                <select class="form-select " id="recordPeriod" name="recordPeriod">
+                    <option value="" selected>--Select--</option>
                     <option value="90">Last 3 Months</option>
                     <option value="180">Last 6 Months</option>
                     <option value="365">Last 1 Year</option>
                 </select>
             </div>
-            <!-- Uncomment if captcha is needed -->
-            <!--
-            <div class="captcha">
-                <img src="{{ MEDIA_URL }}captchas/captcha_image.jpg" alt="Captcha Image" style="width: 127px;">
-                <input type="text" id="captchaInput" name="captchaInput" required>
+            <div class="button-container">
+                <button type="submit" id="submitButton">Search & Download</button>
             </div>
-            -->
-            <div class="d-grid gap-2 d-md-block">
-                <button id="downloadButton" class="btn btn-primary" type="submit">Search & Download</button>
-            </div>
-            <div class="progress-container">
-                <div id="progressBar" class="progress-bar">0%</div>
+
+            <div class="progress-container" style="display: none;">
+                <div id="progressBar" class="progress-bar">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                <span id="progressText">0%</span>
             </div>
         </form>
+
+        <div class="refresh-container">
+            <button id="refreshButton" onclick="window.location.href='{% url 'refresh' %}'">Refresh</button>
+        </div>
     </div>
-{% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
-{% block extra_styles %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<style>
-<!--    /* Center the form container */-->
-<!--    html, body {-->
-<!--        height: 100%;-->
-<!--        margin: 0;-->
-<!--    }-->
+   <style>
+        /* General Styling */
+/* General Styling */
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+    padding-top: 100px;
+    background-color: #f9f9f9;
+}
 
-<!--    body {-->
-<!--        display: flex;-->
-<!--        justify-content: center;-->
-<!--        align-items: center;-->
-<!--        background-color: #f5f5f5;-->
-<!--    }-->
+/* Main Content Styling */
+.container-caseSearch {
+    max-width: 600px;
+    margin: calc(var(--header-height, 100px) + 20px) auto; /* Add header height dynamically */
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
 
-    .container-casesearch {
-        max-width: 600px;
-        width: 100%;
-        padding: 20px;
-        border: 1px solid #ccc;
-        border-radius: 10px;
-        background-color: #fff;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2); /* More prominent shadow for depth */
-        text-align: center;
-    }
 
-    /* Style for input containers and buttons */
-    .date-input-container, .casetype-container, .scheme-container, .record-period, .captcha {
-        margin-bottom: 20px; /* Consistent spacing */
-    }
+/* Form Heading */
+h1 {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
 
-    .form-select, input[type='text'] {
-        width: 100%; /* Full width inputs */
-        padding: 8px;
-        border-radius: 5px;
-        border: 1px solid #ddd;
-        background-color: #f8f8f8; /* Slightly off-white background for inputs */
-    }
+/* Form Labels and Inputs */
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
 
-    .btn-primary {
-        background-color: #007bff; /* Bootstrap primary color */
-        border: none;
-        padding: 10px 20px;
-        font-size: 16px; /* Larger font size */
-        border-radius: 5px;
-        box-shadow: 0 2px 5px rgba(0,123,255,0.3); /* Matching color shadow */
-        cursor: pointer;
-    }
+select,
+input[type="text"],
+button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
 
-    .btn-primary:hover {
-        background-color: #0056b3; /* Darker shade on hover */
-    }
+/* Buttons */
+button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
 
-    .progress-container {
-        width: 100%;
-        background-color: #e9ecef; /* Light grey background */
-        border-radius: 5px; /* Rounded corners for progress bar */
-        overflow: hidden; /* Ensures no spill outside the border */
-    }
+button:hover {
+    background-color: #0056b3;
+}
 
-    .progress-bar {
-        height: 100%;
-        width: 0;
-        background-color: #28a745; /* Green progress */
-        transition: width 0.4s ease; /* Smooth transition */
-    }
+/* Progress Bar */
+.progress-container {
+    display: none;
+    margin-top: 10px;
+}
+
+.progress-bar {
+    background-color: #f3f3f3;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    height: 10px;
+    margin-bottom: 5px;
+}
+
+.progress-bar-fill {
+    background-color: #007bff;
+    width: 0;
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+/* Captcha Styling */
+.captcha img {
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* Refresh Button */
+.refresh-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.refresh-container button {
+    width: auto;
+    padding: 10px 20px;
+}
+
 </style>
-{% endblock %}
-
-
-{% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script>
-        // Validate captcha input
-<!--        function validateCaptcha() {-->
-<!--            const captchaInput = document.getElementById('captchaInput')?.value || '';-->
-<!--            if (captchaInput === "") {-->
-<!--                alert("Please enter the captcha.");-->
-<!--                return false;-->
-<!--            }-->
-<!--            return true;-->
-<!--        }-->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Your JavaScript code here
+        document.addEventListener('DOMContentLoaded', function () {
+    const selects = document.querySelectorAll('select.form-select');
+
+    selects.forEach(function (select) {
+        select.addEventListener('change', function () {
+            console.log(`Selected value: ${this.value}`);
+        });
+    });
+});
+
+
         flatpickr("#advFromDate", {
             dateFormat: "d/m/Y",  // Set format to dd/mm/yyyy
         });
@@ -192,7 +224,7 @@
                 toDate.disabled = isRecordPeriodSelected;
             });
         });
-        document.getElementById("downloadButton")?.addEventListener("click", function(event) {
+        document.getElementById("submitButton")?.addEventListener("click", function(event) {
             document.querySelector(".progress-container").style.display = "block";
             let progressBar = document.getElementById("progressBar");
             let width = 0;
@@ -216,5 +248,7 @@
                 progressBar.innerText = width + '%';
             });
         });
+     });
     </script>
 {% endblock %}
+

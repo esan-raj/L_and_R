@@ -7,6 +7,7 @@ import mysql.connector
 from PyPDF2 import PdfMerger
 from mysql.connector import Error
 from matplotlib.backends.backend_pdf import PdfPages
+from datetime import datetime
 import os
 
 # Singleton class for database connection
@@ -135,7 +136,7 @@ class DataProcessor:
                          ha='center', va='center', alpha=alpha, rotation=rotation)
 
     # free reports
-    def report_with_watermark(self, df):
+    def report_with_watermark(self, df,Water_mark=True):
         # Ensure 'Age(Years)' column is numeric
         df['Age(Years)'] = pd.to_numeric(df['Age(Years)'], errors='coerce')
 
@@ -252,8 +253,9 @@ class DataProcessor:
             fig.patches.append(border)
 
             # Add diagonal watermarks
-            text = 'MEDIPORT'
-            self.add_diagonal_watermarks(plt.gcf(), text, alpha=0.55, fontsize=30, rotation=30, spacing=0.25)
+            if Water_mark == True:
+                text = 'MEDIPORT'
+                self.add_diagonal_watermarks(plt.gcf(), text, alpha=0.55, fontsize=30, rotation=30, spacing=0.25)
 
             # Save the figure into the PDF
             pdf.savefig(fig, bbox_inches='tight')
@@ -261,12 +263,7 @@ class DataProcessor:
         print(f"Report saved successfully at: {pdf_file_path}")
         return pdf_file_path
 
-    def plot_death_case_distribution(self, df):
-        import os
-        import matplotlib.pyplot as plt
-        import matplotlib.patches as patches
-        import pandas as pd
-
+    def plot_death_case_distribution(self, df,Water_mark=True):
         # Convert 'Age(Years)' to numeric, coercing errors to NaN
         df['Age(Years)'] = pd.to_numeric(df['Age(Years)'], errors='coerce')
 
@@ -312,9 +309,9 @@ class DataProcessor:
         for bar in bars:
             yval = bar.get_height()
             axs[1].text(bar.get_x() + bar.get_width() / 2, yval, int(yval), ha='center', va='bottom', fontsize=10)
-
-        # Add diagonal watermarks across the entire page
-        self.add_diagonal_watermarks(fig, 'MEDIPORT', alpha=0.30, fontsize=30, rotation=30, spacing=0.25)
+        if Water_mark == True:
+            # Add diagonal watermarks across the entire page
+            self.add_diagonal_watermarks(fig, 'MEDIPORT', alpha=0.30, fontsize=30, rotation=30, spacing=0.25)
 
         # Add comments about the plots
         fig.text(0.5, 1.02, 'Report Analysis By Mediport', ha='center', fontsize=20, fontweight='bold')
@@ -346,7 +343,7 @@ class DataProcessor:
         print(f'Combined plots saved as {combined_pdf_path}')
         return combined_pdf_path
 
-    def save_combined_pivot_tables_as_pdf(self,df, index_column, columns_column, values_column):
+    def save_combined_pivot_tables_as_pdf(self,df, index_column, columns_column, values_column, Water_mark=True):
         """
         Creates two pivot tables and saves them as a single PDF with comments and watermarks.
 
@@ -395,9 +392,9 @@ class DataProcessor:
                       colLabels=pivot_table2.columns,
                       loc='center')
         axes[1].set_title('Case Status Claim Amounts', fontsize=16, fontweight='bold')
-
-        # Add diagonal watermarks across the entire page
-        self.add_diagonal_watermarks(plt.gcf(), 'MEDIPORT', alpha=0.30, fontsize=30, rotation=30, spacing=0.25)
+        if Water_mark == True:
+            # Add diagonal watermarks across the entire page
+            self.add_diagonal_watermarks(plt.gcf(), 'MEDIPORT', alpha=0.30, fontsize=30, rotation=30, spacing=0.25)
 
         # Add comments under each plot
         fig.text(0.5, 0.99999, 'Vagus Hospital', ha='center', va='center', fontsize=20, fontweight='bold')
@@ -419,29 +416,52 @@ class DataProcessor:
         pdf_file_path = os.path.join(reports_folder, "combined_pivot_table_report.pdf")
         plt.tight_layout()
         plt.savefig(pdf_file_path, format='pdf', bbox_inches='tight', pad_inches=0.5)
-        plt.show()  # Close the plot to avoid displaying it
+        # plt.show()  # Close the plot to avoid displaying it
 
         print(f'Combined pivot tables saved as {pdf_file_path}')
         return pdf_file_path
 
-    def combine_pdfs(self, pdf_files,output_file):
+    def combine_pdfs(self, pdf_files, output_dir="Reports"):
         """
         Combines multiple PDF files into a single PDF.
+        Generates a unique name for the combined file and avoids overwriting.
         """
         try:
             merger = PdfMerger()
-            for pdf in pdf_files:
-                merger.append(pdf)
-            merger.write(output_file)
-            merger.close()
-            print(f"All PDFs have been combined into {output_file}.")
+            valid_files = []
+
+            # Validate and append PDFs
             for pdf in pdf_files:
                 if os.path.exists(pdf):
-                    os.remove(pdf)
-                    print(f"{pdf} is deleted successfully")
-            print("ALL THE PDF ARE DELETED SUCCESSFULLY!!!")
+                    try:
+                        merger.append(pdf)
+                        valid_files.append(pdf)  # Track valid files for deletion
+                    except Exception as e:
+                        print(f"Error appending {pdf}: {e}")
+                else:
+                    print(f"File not found: {pdf}")
+
+            # Write the combined PDF
+            if valid_files:
+                # Generate a unique output file name
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_file = os.path.join(output_dir,f"Combined_Reports{timestamp}.pdf")
+                os.makedirs(output_dir, exist_ok=True)
+
+                # Write the combined PDF
+                merger.write(output_file)
+                merger.close()
+                print(f"All PDFs have been combined into {output_file}.")
+
+                # Return the path to the combined PDF
+                return output_file
+            else:
+                print("No valid PDF files to combine.")
+                return None
+
         except Exception as e:
             print(f"Error combining PDFs: {e}")
+            return None
 
     #paid reports
     def count_of_case_status(self,df):
@@ -1076,92 +1096,103 @@ class DataProcessor:
         print(f"Report successfully saved at: {pdf_file_path}")
         return pdf_file_path
     #returns images
-    def sumofclaiminitiatedamount(self,df): #generates image
-        # Convert 'Claim Submitted Date' to datetime
-        df['Claim Submitted Date'] = pd.to_datetime(df['Claim Submitted Date'], errors='coerce')
+    def sumofclaiminitiatedamount(self, df):
+        """
+        Generates an image report with pivot tables for claim amounts.
+        Filters data for years 2022, 2023, and 2024 and provides summaries.
+        """
+        try:
+            # Convert 'Claim Submitted Date' to datetime
+            df['Claim Submitted Date'] = pd.to_datetime(df['Claim Submitted Date'], errors='coerce')
 
-        # Extract the year from 'Claim Submitted Date'
-        df['Year'] = df['Claim Submitted Date'].dt.year
+            # Extract the year from 'Claim Submitted Date'
+            df['Year'] = df['Claim Submitted Date'].dt.year
 
-        # Filter the data for years 2022, 2023, and 2024
-        df_filtered = df[df['Year'].isin([2022, 2023, 2024])]
+            # Filter the data for years 2022, 2023, and 2024
+            df_filtered = df[df['Year'].isin([2022, 2023, 2024])]
 
-        # Create pivot tables
-        pivot_table_filtered = pd.pivot_table(
-            df_filtered,
-            values='Claim Initaiated Amount(Rs.)',
-            index='Case Status',
-            columns='Year',
-            aggfunc='sum',
-            fill_value=0,
-            margins=True,
-            margins_name='Grand Total'
-        )
+            # Create pivot tables
+            pivot_table_filtered = pd.pivot_table(
+                df_filtered,
+                values='Claim Initaiated Amount(Rs.)',
+                index='Case Status',
+                columns='Year',
+                aggfunc='sum',
+                fill_value=0,
+                margins=True,
+                margins_name='Grand Total'
+            )
 
-        pivot_table_all = pd.pivot_table(
-            df,
-            values='Claim Initaiated Amount(Rs.)',
-            index='Case Status',
-            aggfunc='sum',
-            margins=True,
-            margins_name='Total Grand'
-        )
+            pivot_table_all = pd.pivot_table(
+                df,
+                values='Claim Initaiated Amount(Rs.)',
+                index='Case Status',
+                aggfunc='sum',
+                margins=True,
+                margins_name='Total Grand'
+            )
 
-        # Create a figure with subplots for both tables
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 14))
+            # Create a figure with subplots for both tables
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 14))
 
-        # Hide axes for both tables
-        ax1.axis('off')
-        ax2.axis('off')
+            # Hide axes for both tables
+            ax1.axis('off')
+            ax2.axis('off')
 
-        # Create a table for the filtered pivot table
-        table_filtered = ax1.table(
-            cellText=pivot_table_filtered.values,
-            rowLabels=pivot_table_filtered.index,
-            colLabels=pivot_table_filtered.columns,
-            loc='center'
-        )
-        ax1.set_title('Case Status Claim Amt (Filtered: 2022-2024)', fontsize=14, fontweight='bold', pad=20)
+            # Create tables
+            table_filtered = ax1.table(
+                cellText=pivot_table_filtered.values,
+                rowLabels=pivot_table_filtered.index,
+                colLabels=pivot_table_filtered.columns,
+                loc='center'
+            )
+            ax1.set_title('Case Status Claim Amt (Filtered: 2022-2024)', fontsize=14, fontweight='bold', pad=20)
 
-        # Create a table for the all-data pivot table
-        table_all = ax2.table(
-            cellText=pivot_table_all.values,
-            rowLabels=pivot_table_all.index,
-            colLabels=pivot_table_all.columns,
-            loc='center'
-        )
-        ax2.set_title('Case Status Claim Amt (All Data)', fontsize=14, fontweight='bold', pad=20)
+            table_all = ax2.table(
+                cellText=pivot_table_all.values,
+                rowLabels=pivot_table_all.index,
+                colLabels=pivot_table_all.columns,
+                loc='center'
+            )
+            ax2.set_title('Case Status Claim Amt (All Data)', fontsize=14, fontweight='bold', pad=20)
 
-        # Adjust table font size and scale
-        for table in [table_filtered, table_all]:
-            table.auto_set_font_size(False)
-            table.set_fontsize(10)
-            table.scale(1.3, 1.3)  # Adjust the scale for better readability
+            # Adjust table font size and scale
+            for table in [table_filtered, table_all]:
+                table.auto_set_font_size(False)
+                table.set_fontsize(10)
+                table.scale(1.3, 1.3)
 
-        # Add descriptive comments and labels
-        comment_plot = "The filtered table highlights amounts for the years 2022 to 2024, while the all-data table provides overall totals."
-        fig.text(0.5, 0.55, comment_plot, ha='center', fontsize=12, fontstyle='italic')
+            # Add descriptive comments
+            comment_plot = (
+                "The filtered table highlights amounts for the years 2022 to 2024, "
+                "while the all-data table provides overall totals."
+            )
+            fig.text(0.5, 0.55, comment_plot, ha='center', fontsize=12, fontstyle='italic')
 
-        # Add the title and footer to the entire figure
-        fig.text(0.5, 1.03, 'Vagus Hospital', ha='center', fontsize=20, fontweight='bold')
-        fig.text(0.5, 0.01, 'Report Analysis by Mediport', ha='center', fontsize=13, fontweight='bold')
+            # Add title and footer
+            fig.text(0.5, 1.03, 'Vagus Hospital', ha='center', fontsize=20, fontweight='bold')
+            fig.text(0.5, 0.01, 'Report Analysis by Mediport', ha='center', fontsize=13, fontweight='bold')
 
-        # Draw a border around the entire figure
-        border = patches.Rectangle((-0.05, -0.05), 1.1, 1.1, transform=fig.transFigure, color='black', linewidth=3,
-                                   fill=False)
-        fig.patches.append(border)
+            # Draw a border around the entire figure
+            border = patches.Rectangle(
+                (-0.05, -0.05), 1.1, 1.1, transform=fig.transFigure,
+                color='black', linewidth=3, fill=False
+            )
+            fig.patches.append(border)
 
-        # Adjust layout and ensure the Reports folder exists
-        plt.tight_layout()
-        reports_folder = os.path.join(os.getcwd(), "Reports")
-        if not os.path.exists(reports_folder):
-            os.makedirs(reports_folder)
+            # Adjust layout and save the figure
+            plt.tight_layout()
+            reports_folder = os.path.join(os.getcwd(), "Reports")
+            os.makedirs(reports_folder, exist_ok=True)
 
-        # Save the figure as an image
-        image_path = os.path.join(reports_folder, "case_status_claim_amt_combined.png")
-        plt.savefig(image_path, bbox_inches='tight', pad_inches=0.5)
-        ##plt.show()
-        print(f'Report saved successfully at: {image_path}')
+            image_path = os.path.join(reports_folder, "case_status_claim_amt_combined.png")
+            plt.savefig(image_path, bbox_inches='tight', pad_inches=0.5)
+            print(f'Report saved successfully at: {image_path}')
+            return image_path
+
+        except Exception as e:
+            print(f"Error in sumofclaiminitiatedamount: {e}")
+            return None
 
     #returns excel
     def Difference_between_claim_initiate_amount_approval_amount(self, df): #generate excel
@@ -1200,6 +1231,7 @@ class DataProcessor:
         pivot_table.to_excel(output_path, sheet_name='Amount Difference')
 
         print(f"Pivot table saved successfully at: {output_path}")
+        return output_path
     #return ExcelFile
     def cases_by_familyid(self,df):   #generate excel
         # Group the data by 'Family Id' and filter where 'Family Id' occurs more than once
@@ -1230,70 +1262,126 @@ class DataProcessor:
         pivot_table.to_excel(output_path, sheet_name='Family Claim Report')
 
         print(f"Family claim report saved successfully at: {output_path}")
-        # return output_path
+        return output_path
 
+    def combined_report_summary(self,df):
+        pdf_files = []
+        pdf_files.append(self.report_with_watermark(df,False))
+        pdf_files.append(self.save_combined_pivot_tables_as_pdf(df, 'Case Status', 'Gender', 'Case No',False))
+        pdf_files.append(self.plot_death_case_distribution(df,False))
+        return(self.combine_pdfs(pdf_files))
+        # return 'Reports/report_summary.pdf'
 
-
+    def generate_sample_report(self,df):
+        pdf_files=[]
+        pdf_files.append(self.report_with_watermark(df))
+        pdf_files.append(self.save_combined_pivot_tables_as_pdf(df, 'Case Status', 'Gender', 'Case No'))
+        pdf_files.append(self.plot_death_case_distribution(df))
+        return(self.combine_pdfs(pdf_files))
 # Main function
-def main():
-    # Database connection details
+import os
+import zipfile
+
+
+def main(selected_reports=None, sample=False):
+    """
+    Main function to handle report generation for both sample and paid reports.
+    """
     host = "localhost"
     user = "root"
     password = "1234"
     database = "mediportdb"
-
-    # SQL query
     query = "SELECT * FROM casesearch"
 
-    # Get database connection
+    METHOD_MAP = {
+        "Cases_Count_by_Status_and_Gender": "count_of_case_status",
+        "Cases_Count_by_Age": "count_cases_by_age",
+        "Death_Counts_by_Gender": "death_by_gender",
+        "Death_Counts_by_Age": "death_by_age",
+        "Cases_Count_by_Gender": "count_case_gender",
+        "Cases_Count_by_Case_Type": "casecount_by_casetype",
+        "Cases_Count_by_Patient_District": "casecount_by_location",
+        "Case_Status_Claim_Amount": "casestatus_claim_amount_yearwise",
+        "Detailed_Summary_of_Amounts": "sumofclaiminitiatedamount",
+        "Combined_Report_Analysis_Summary": "combined_report_summary",
+        "Difference_between_claim_initiate_amount_approval_amount":"Difference_between_claim_initiate_amount_approval_amount",
+        "cases_by_familyid":"cases_by_familyid",
+    }
+
     connection = DatabaseConnectionSingleton.get_instance(host, user, password, database)
 
-    if connection:
-        # Process data
+    if not connection:
+        print("Failed to connect to the database.")
+        return 'Failed to connect to the database!'
+
+    try:
         processor = DataProcessor(connection)
         df = processor.fetch_data(query)
-        if df is not None:
-            pdf_files = []
-            pdf_files.append(processor.report_with_watermark(df)) #has watermarks
-            pdf_files.append(processor.save_combined_pivot_tables_as_pdf(df, 'Case Status', 'Gender', 'Case No')) #has watermarks
-            pdf_files.append(processor.plot_death_case_distribution(df)) #has watermarks
-            pdf_files.append(processor.count_of_case_status(df))
-            # pdf_files.append(processor.count_of_case_status(df))
-            pdf_files.append(processor.casestatus_claim_amount_yearwise(df)) #getting key error of gross payment
-            # processor.Difference_between_claim_initiate_amount_approval_amount(df) #return excel
-            pdf_files.append(processor.casecount_by_casetype(df))
-            # processor.cases_by_familyid(df) return excel
-            pdf_files.append(processor.casecount_by_location(df))
-            pdf_files.append(processor.count_case_gender(df))
-            pdf_files.append(processor.count_cases_by_age(df))
-            pdf_files.append(processor.death_by_age(df))
-            pdf_files.append(processor.death_by_gender(df))
-            # processor.sumofclaiminitiatedamount(df) #return image
-            # pdf_files = [
-            #     "case_analysis.pdf",
-            #     # "gender_distribution.pdf",
-            #     # "death_counts_by_gender.pdf",
-            #     # "death_counts_by_age_group.pdf",
-            #     # "case_counts_by_district.pdf",
-            #     "additional_analysis.pdf"
-            # ]
-            # # Combine all PDFs into one
-            # processor.combine_pdfs(pdf_files, output_file="combined_analysis.pdf")
-            combined_pdf_path = "Reports/Combined_Report.pdf"
-            processor.combine_pdfs(pdf_files, combined_pdf_path)
+        if df is None:
+            print("Failed to fetch data from the database.")
+            return 'Failed to fetch data from the database!'
 
-            # Delete individual PDF files
-            for pdf in pdf_files:
-                if os.path.exists(pdf):
-                    os.remove(pdf)
-                    print(f"{pdf} is deleted successfully")
-            print("ALL THE PDF ARE DELETED SUCCESSFULLY!!!")
+        output_files = []
 
-        # Close database connection
+        # Generate a free sample report
+        if sample:
+            output_files.append(processor.generate_sample_report(df))
+
+        # Process selected reports
+        for report_name in selected_reports:
+            method_name = METHOD_MAP.get(report_name)
+            if method_name and hasattr(processor, method_name):
+                method = getattr(processor, method_name)
+                try:
+                    output_file = method(df)
+                    if output_file:  # Only append if the output_file is not None
+                        output_files.append(output_file)
+                    else:
+                        print(f"Method {method_name} did not return a valid file path.")
+                except Exception as e:
+                    print(f"An error occurred while executing {method_name}: {e}")
+            else:
+                print(f"Method {method_name} not found in DataProcessor.")
+
+        # Combine PDFs if applicable
+        pdf_files = [file for file in output_files if file.endswith('.pdf')]
+        if pdf_files:
+            combined_pdf_path = processor.combine_pdfs(pdf_files)
+            if combined_pdf_path:
+                print(f"Combined PDF saved at {combined_pdf_path}")
+
+                # Remove individual PDFs
+                for pdf in pdf_files:
+                    if pdf != combined_pdf_path:  # Skip the combined PDF
+                        try:
+                            os.remove(pdf)
+                            print(f"{pdf} is deleted successfully")
+                        except Exception as e:
+                            print(f"Error deleting {pdf}: {e}")
+
+                # Update output_files to only include the combined PDF and non-PDF files
+                output_files = [file for file in output_files if not file.endswith('.pdf')]
+                output_files.append(combined_pdf_path)
+
+        else:
+            print("No valid PDFs to combine.")
+
+        # Create a zip file containing all output files
+        zip_file_path = "Reports/Combined_Files.zip"
+        with zipfile.ZipFile(zip_file_path, 'w') as zipf:
+            for file in output_files:
+                if os.path.exists(file):
+                    zipf.write(file, os.path.basename(file))
+
+        print(f"All files have been zipped into {zip_file_path}")
+        return 'Reports generated successfully!'
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return 'An error occurred while generating reports!'
+
+    finally:
         DatabaseConnectionSingleton.close_instance()
-        return 'success'
-    else:
-        return 'fail'
 
 
 # Run the main function

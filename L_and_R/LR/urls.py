@@ -26,5 +26,7 @@ urlpatterns = [
     path('claimpaiddata/', views.claim_paid_data, name='claimpaiddata'),
     path('report-download-form/', views.reportdownloadform, name='reportdownloadform'),
     path('report-download/', views.report_download, name='reportdownload'),
+    path('generate-reports/', views.generate_reports, name='generate_reports'),
+    path('serve-report/', views.serve_download_report, name='serve_download_report'),
 
 ]

@@ -1,0 +1,113 @@
+{% extends 'LR/base.html' %}
+
+{% block title %}Process Result{% endblock %}
+
+{% block content %}
+    <div class="download-container">
+        <p class="message">{{ message }}</p>
+<!--        <button type="button" class="btn download-again-btn" onclick="window.location.href='{% url 'download_again' %}'">Go back to download page</button>-->
+
+        <!-- Commented out logout form -->
+        <!--
+        <form action="{% url 'close' %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn logout-btn">Logout</button>
+        </form>
+        -->
+
+        <button type="button" class="btn download-btn" onclick="window.location.href='{% url 'serve_download_report' %}'">Download Files</button>
+    </div>
+<style>
+/* Base styles */
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    padding-top: 120px;
+}
+
+.download-container {
+    max-width: 600px;
+    margin: calc(var(--header-height, 100px) + 20px) auto; /* Add header height dynamically */
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* Message styles */
+.message {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    color: #4a4a4a;
+}
+
+/* Button styles */
+.btn {
+    display: inline-block;
+    padding: 0.8rem 1.5rem;
+    margin: 0.5rem;
+    font-size: 1rem;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.download-again-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.download-again-btn:hover {
+    background-color: #45a049;
+}
+
+.logout-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+.logout-btn:hover {
+    background-color: #da190b;
+}
+
+.download-btn {
+    background-color: #008CBA;
+    color: white;
+}
+
+.download-btn:hover {
+    background-color: #007a9e;
+}
+
+/* Responsive design */
+@media screen and (max-width: 600px) {
+    .download-container {
+        padding: 1rem;
+        margin: 1rem;
+    }
+
+    .btn {
+        display: block;
+        width: 100%;
+        margin: 0.5rem 0;
+    }
+}
+</style>
+
+{% endblock %}

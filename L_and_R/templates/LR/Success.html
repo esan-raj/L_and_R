@@ -3,7 +3,6 @@
 {% block title %}Process Result{% endblock %}
 
 {% block content %}
-   {% block content %}
     <div class="download-container">
         <p class="message">{{ message }}</p>
         <button type="button" class="btn download-again-btn" onclick="window.location.href='{% url 'download_again' %}'">Go back to download page</button>
@@ -27,11 +26,12 @@ body {
     background-color: #f4f4f4;
     margin: 0;
     padding: 0;
+    padding-top: 100px;
 }
 
 .download-container {
     max-width: 600px;
-    margin: 2rem auto;
+    margin: calc(var(--header-height, 100px) + 20px) auto; /* Add header height dynamically */
     padding: 2rem;
     background-color: #fff;
     border-radius: 8px;
@@ -109,7 +109,4 @@ body {
     }
 }
 </style>
-
-{% endblock %}
-
 {% endblock %}

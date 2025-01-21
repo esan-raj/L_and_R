@@ -21,10 +21,23 @@ from .models import AppUser
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import logout as auth_logout
 from django.http import JsonResponse
+import json
+import requests
 
 AppUser = get_user_model()
 
-
+METHOD_MAP = {
+    "Cases_Count_by_Status_and_Gender": "count_of_case_status",
+    "Cases_Count_by_Age": "count_cases_by_age",
+    "Death_Counts_by_Gender": "death_by_gender",
+    "Death_Counts_by_Age": "death_by_age",
+    "Cases_Count_by_Gender": "count_case_gender",
+    "Cases_Count_by_Case_Type": "casecount_by_casetype",
+    "Cases_Count_by_Patient_District": "casecount_by_location",
+    "Case_Status_Claim_Amount": "casestatus_claim_amount_yearwise",
+    "Detailed_Summary_of_Amounts": "sumofclaiminitiatedamount",
+    "Combined_Report_Analysis_Summary": "combined_report_summary"
+}
 # Singleton pattern for WebDriver
 class WebDriverSingleton:
     _instance = None
@@ -175,7 +188,7 @@ def dashboard_view(request):
     app_username = request.session.get('app_username')
     if not app_username:
         return redirect('login')
-    driver = WebDriverSingleton.refresh_instance()
+    # driver = WebDriverSingleton.refresh_instance()
     # Render the dashboard
     return render(request, 'LR/dashboard.html')
 
@@ -258,10 +271,10 @@ def process_input(request):
         # print(fromdate)
         # print(todate)
         # Start WebDriver instance
-        # driver = WebDriverSingleton.get_instance()
+        driver = WebDriverSingleton.get_instance()
 
         # Solve captcha and input form details
-        # captcha_solve(driver, captcha)
+        captcha_solve(driver, captcha)
 
         captcha_image_path = os.path.join(settings.BASE_DIR,'L_and_R/media/captchas/captcha_image.jpg')  # Replace with the actual path to the captcha image
         if os.path.exists(captcha_image_path):
@@ -270,7 +283,7 @@ def process_input(request):
                 print(f"Captcha image {captcha_image_path} deleted successfully!")
             except OSError as e:
                 print(f"Error deleting captcha image: {e}")
-        # input_case_type(driver, case_type)
+        input_case_type(driver, case_type)
         #
         # Initialize message variable
         message = f"""Scheme = {scheme}<br>
@@ -279,34 +292,34 @@ def process_input(request):
                         captcha = {captcha}<br>
                         from date = {fromdate}<br>
                         to date = {todate}"""
-        # # try:
-        # if record:  # If recordPeriod is filled, download with record
-        #     print("Record period found, downloading with record.")
-        #     status = download_excel(driver, scheme, record)
-        # else:  # If recordPeriod is not filled, download with selected_option
-        #     print("Record period not found, processing dropdown options.")
-        #     # Get the intervals based on fromdate and todate
-        #     intervals = get_90_day_intervals(fromdate, todate)
-        #     # Assuming process_dates_and_download handles dropdown options
-        #     status = process_dates_and_download(driver, intervals, scheme, request)
-        #
-        #     # For simplicity, assuming this function handles the download_excel internally
-        #     # and processes the selected_option.
-        #
-        #     # Set message based on the status (if available from process_dates_and_download)
-        #     # Assuming this is set based on the process
-        #
-        #     # Handle status messages based on download_excel results
-        # if status == "no_records":
-        #     message = "No records found."
-        # elif status == "error":
-        #     message = "An error occurred during processing."
-        # else:
-        #     message = "File loaded successfully. Please download it before moving ahead"
-        # except (ConnectionAbortedError, BrokenPipeError):
-        #     print("Client disconnected prematurely.")
-        #     message = "Processing was interrupted due to a client disconnection."
-        #     return redirect('login')
+        try:
+            if record:  # If recordPeriod is filled, download with record
+                print("Record period found, downloading with record.")
+                status = download_excel(driver, scheme, record)
+            else:  # If recordPeriod is not filled, download with selected_option
+                print("Record period not found, processing dropdown options.")
+                # Get the intervals based on fromdate and todate
+                intervals = get_90_day_intervals(fromdate, todate)
+                # Assuming process_dates_and_download handles dropdown options
+                status = process_dates_and_download(driver, intervals, scheme, request)
+
+                # For simplicity, assuming this function handles the download_excel internally
+                # and processes the selected_option.
+
+                # Set message based on the status (if available from process_dates_and_download)
+                # Assuming this is set based on the process
+
+                # Handle status messages based on download_excel results
+            if status == "no_records":
+                message = "No records found."
+            elif status == "error":
+                message = "An error occurred during processing."
+            else:
+                message = "File loaded successfully. Please download it before moving ahead"
+        except (ConnectionAbortedError, BrokenPipeError):
+            print("Client disconnected prematurely.")
+            message = "Processing was interrupted due to a client disconnection."
+            return redirect('login')
         # Render the success page with the message
         return render(request, 'LR/Success.html', {'message': message})
 
@@ -408,12 +421,26 @@ def process(request):
 
     return HttpResponse("Invalid request method.")
 
-
+@login_required
 def close(request):
-    driver = WebDriverSingleton.get_instance()
-    close_driver(driver)
+    def is_connected():
+        """Check if the system is connected to the internet."""
+        try:
+            requests.get("https://www.google.com", timeout=5)  # Test connection with Google
+            return True
+        except (requests.ConnectionError, requests.Timeout):
+            return False
+
+    if is_connected():
+        # System is connected to the internet; proceed with webdriver operations
+        driver = WebDriverSingleton.get_instance()
+        close_driver(driver)
+
+    # Flush session and log out the user
     auth_logout(request)
     request.session.flush()
+
+    # Render the logout template
     return render(request, 'LR/logout.html')
 
 
@@ -477,27 +504,24 @@ def profile_view(request):
 
 @login_required
 def claimpaid(request):
-    if request.method == 'POST':
-        app_username = request.session.get('app_username')
+    app_username = request.session.get('app_username')
 
-        if not app_username:
-            return redirect('login')
+    if not app_username:
+        return redirect('login')
 
-        # Fetch the site credentials using the app_username
-        site_username = fetch_site_username(app_username)
-        site_password = fetch_site_password(app_username)
+    # Fetch the site credentials using the app_username
+    site_username = fetch_site_username(app_username)
+    site_password = fetch_site_password(app_username)
 
-        if not site_username or not site_password:
-            return HttpResponse("Site credentials not found or invalid.")
+    if not site_username or not site_password:
+        return HttpResponse("Site credentials not found or invalid.")
 
-        driver = WebDriverSingleton.get_instance()
-        # Start the WebDriver process
-        login_site(driver, site_username, site_password)
+    driver = WebDriverSingleton.get_instance()
+    # Start the WebDriver process
+    login_site(driver, site_username, site_password)
 
-        # After processing, render form.html
-        return render(request, 'LR/claim_paid_report.html', {'MEDIA_URL': settings.MEDIA_URL})
-
-    return HttpResponse("Invalid request method.")
+    # After processing, render form.html
+    return render(request, 'LR/claim_paid_report.html', {'MEDIA_URL': settings.MEDIA_URL})
 
 @login_required
 def claim_paid_data(request):
@@ -595,8 +619,43 @@ def reportdownloadform(request):
     return render(request,'LR/reportdownloadform.html')
 @login_required
 def report_download(request):
-    message = main()
-    return render(request,'LR/Success.html', {'message': message})
+    message = main(sample=True)
+    return render(request,'LR/success_report.html', {'message': message})
+@login_required
+def generate_reports(request):
+    """
+    View to handle report generation:
+    - Process the selected checkboxes dynamically.
+    - Generate the reports and display success or error messages in a template.
+    """
+    if request.method == "POST":
+        # Get the selected checkboxes
+        selected_reports = request.POST.getlist("report")  # List of selected checkboxes
 
-# @login_required
-# def
+        if not selected_reports:
+            return render(request, 'LR/success_report.html', {'message': 'No checkboxes selected!'})
+
+        # Call the main function with the selected reports
+        message = main(selected_reports=selected_reports)
+        return render(request, 'LR/success_report.html', {'message': message})
+
+    # Render the error template for invalid request methods
+    return render(request, 'LR/success_report.html', {'message': 'Invalid request method!'})
+@login_required
+def serve_download_report(request):
+    """
+    Serve the combined report ZIP file to the user as a downloadable response.
+    """
+    # Path to the ZIP file (adjust this path based on your setup)
+    reports_folder = os.path.join(os.getcwd(), "Reports")
+    zip_file_path = os.path.join(reports_folder, "Combined_Files.zip")
+
+    # Check if the file exists
+    if not os.path.exists(zip_file_path):
+        return HttpResponse("The requested report does not exist.", status=404)
+
+    # Serve the file as a downloadable response
+    with open(zip_file_path, 'rb') as zip_file:
+        response = HttpResponse(zip_file.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(zip_file_path)}"'
+        return response
