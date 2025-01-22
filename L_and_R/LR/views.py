@@ -26,18 +26,7 @@ import requests
 
 AppUser = get_user_model()
 
-METHOD_MAP = {
-    "Cases_Count_by_Status_and_Gender": "count_of_case_status",
-    "Cases_Count_by_Age": "count_cases_by_age",
-    "Death_Counts_by_Gender": "death_by_gender",
-    "Death_Counts_by_Age": "death_by_age",
-    "Cases_Count_by_Gender": "count_case_gender",
-    "Cases_Count_by_Case_Type": "casecount_by_casetype",
-    "Cases_Count_by_Patient_District": "casecount_by_location",
-    "Case_Status_Claim_Amount": "casestatus_claim_amount_yearwise",
-    "Detailed_Summary_of_Amounts": "sumofclaiminitiatedamount",
-    "Combined_Report_Analysis_Summary": "combined_report_summary"
-}
+
 # Singleton pattern for WebDriver
 class WebDriverSingleton:
     _instance = None
