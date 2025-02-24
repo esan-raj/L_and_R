@@ -1,17 +1,19 @@
 {% extends 'LR/base.html' %}
 
-{% block title %}Report Download form{% endblock %}
-<!--{% block navbar_items %}-->
-<!--    <li><a href="{% url 'dashboard' %}">Dashboard</a></li>-->
-<!--    <li><a href="{% url 'profile' %}">Profile</a></li>-->
-<!--    <li><a href="{% url 'close' %}">Logout</a></li>-->
-<!--{% endblock %}-->
+{% block title %}Report Download Form{% endblock %}
 
 {% block content %}
-<!--<h1> Report download form</h1>-->
 <style>
+    .messages{
+        display:flex;
+        margin: calc(var(--header-height, 100px) + 20px) auto; /* Add header height dynamically */
+        justify-content: center;
+        align-items: center;
+        background-color: #f9f9f9;
+    }
     .container-report {
         display: flex;
+        margin: calc(var(--header-height, 100px) + 20px) auto; /* Add header height dynamically */
         justify-content: center;
         align-items: center;
         min-height: 100vh;
@@ -88,215 +90,122 @@
         cursor: pointer;
     }
 </style>
-
+{% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
 
 <div class="container-report">
     <!-- Free Report Section -->
     <div class="section">
         <h2>Free Report Download</h2>
         <p>Click the button below to download a sample report for free.</p>
-        <button class="btn" id="freeDownloadButton" onclick="window.location.href='{% url 'reportdownload' %}'">Download Sample for Free</button>
+        <button class="btn" id="freeDownloadButton" onclick="window.location.href='{% url 'reportdownload' %}'">
+            Download Sample for Free
+        </button>
     </div>
 
     <!-- Paid Report Section -->
     <div class="section">
+        {% if has_active_subscription %}
         <form class="section" id="reportForm" action="{% url 'generate_reports' %}" method="POST">
             {% csrf_token %}
-        <h2>Paid Report Download</h2>
-        <p>Select the reports you want to download. Unlock access by completing payment.</p>
+            <h2>Paid Report Download</h2>
 
-        <div class="checkbox-group">
-            <label>
-                <input type="checkbox" name="report" value="Cases_Count_by_Status_and_Gender"> Cases Count by Status and Gender (Bar Graph)
-            </label><br>
-            <label>
-                <input type="checkbox" name="report" value="Cases_Count_by_Age"> Cases Count by Age (Bar Graph)
-            </label><br>
-            <label>
-                <input type="checkbox" name="report" value="Death_Counts_by_Gender"> Death Counts by Gender (Donut Chart)
-            </label><br>
-            <label>
-                <input type="checkbox" name="report" value="Death_Counts_by_Age"> Death Counts by Age (Bar Graph)
-            </label><br>
-            <label>
-                <input type="checkbox" name="report" value="Cases_Count_by_Gender"> Cases Count by Gender (Pie Chart)
-            </label><br>
-            <label>
-                <input type="checkbox" name="report" value="Cases_Count_by_Case_Type"> Cases Count by Case Type (Donut Chart)
-            </label><br>
-            <label>
-                <input type="checkbox" name="report" value="Cases_Count_by_Patient_District"> Cases Count by Patient's District (Bar Graph)
-            </label><br>
-            <label>
-                <input type="checkbox" name="report" value="Case_Status_Claim_Amount"> Case Status Claim Amount (Bar Graph)
-            </label><br>
-            <label>
-                <input type="checkbox" name="report" value="Detailed_Summary_of_Amounts"> Detailed Summary of Amounts related to Cases
-            </label><br>
-            <label>
-                <input type="checkbox" name="report" value="Combined_Report_Analysis_Summary"> Combined Report Analysis Summary
-            </label><br>
-            <label>
-                <input type="checkbox" name="report" value="Difference_between_claim_initiate_amount_approval_amount"> Difference_between_claim_initiate_amount_approval_amount (Table)
-            </label><br>
-            <label>
-                <input type="checkbox" name="report" value="cases_by_familyid"> Cases_by_FamilyId (Table)
-            </label><br>
-        </div>
+            <p>Select the reports you want to download. Unlock access by completing payment.</p>
 
-        <button class="btn payment-btn" type="submit">Proceed to Payment</button>
-        <button class="btn" type="submit" id="paidDownloadButton">Download Selected Reports</button>
-    </form>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" name="report" value="Cases_Count_by_Status_and_Gender" class="report-checkbox">
+                    Cases Count by Status and Gender (Bar Graph)
+                </label><br>
+                <label>
+                    <input type="checkbox" name="report" value="Cases_Count_by_Age" class="report-checkbox">
+                    Cases Count by Age (Bar Graph)
+                </label><br>
+                <label>
+                    <input type="checkbox" name="report" value="Death_Counts_by_Gender" class="report-checkbox">
+                    Death Counts by Gender (Donut Chart)
+                </label><br>
+                <label>
+                    <input type="checkbox" name="report" value="Death_Counts_by_Age" class="report-checkbox">
+                    Death Counts by Age (Bar Graph)
+                </label><br>
+                <label>
+                    <input type="checkbox" name="report" value="Cases_Count_by_Gender" class="report-checkbox">
+                    Cases Count by Gender (Pie Chart)
+                </label><br>
+                <label>
+                    <input type="checkbox" name="report" value="Cases_Count_by_Case_Type" class="report-checkbox">
+                    Cases Count by Case Type (Donut Chart)
+                </label><br>
+                <label>
+                    <input type="checkbox" name="report" value="Cases_Count_by_Patient_District" class="report-checkbox">
+                    Cases Count by Patient's District (Bar Graph)
+                </label><br>
+                <label>
+                    <input type="checkbox" name="report" value="Case_Status_Claim_Amount" class="report-checkbox">
+                    Case Status Claim Amount (Bar Graph)
+                </label><br>
+                <label>
+                    <input type="checkbox" name="report" value="Detailed_Summary_of_Amounts" class="report-checkbox">
+                    Detailed Summary of Amounts related to Cases
+                </label><br>
+                <label>
+                    <input type="checkbox" name="report" value="Combined_Report_Analysis_Summary" class="report-checkbox">
+                    Combined Report Analysis Summary
+                </label><br>
+                <label>
+                    <input type="checkbox" name="report" value="Difference_between_claim_initiate_amount_approval_amount" class="report-checkbox">
+                    Difference between Claim Initiate Amount & Approval Amount (Table)
+                </label><br>
+                <label>
+                    <input type="checkbox" name="report" value="cases_by_familyid" class="report-checkbox">
+                    Cases by Family ID (Table)
+                </label><br>
+            </div>
+
+
+            <button class="btn" type="submit" id="paidDownloadButton">Download Selected Reports</button>
+        </form>
+        {% else %}
+        <h2>Subscription Required</h2>
+        <p>You must have an active subscription to download reports</p>
+        <button class="btn payment-btn" type="button" id="payButton" onclick="window.location.href='{% url 'payment_page' %}'">Proceed to Payment</button>
+        {% endif %}
+    </div>
 </div>
-</div>
 
-<!--<script>-->
-<!--    function redirectToPayment() {-->
-<!--        // Redirect to payment gateway-->
-<!--        window.location.href = "/payment-gateway"; // Replace with the actual payment gateway URL-->
-<!--    }-->
-
-<!--    // Simulate payment confirmation-->
-<!--    document.addEventListener("DOMContentLoaded", function() {-->
-<!--        const urlParams = new URLSearchParams(window.location.search);-->
-<!--        if (urlParams.get("payment") === "success") {-->
-<!--            // Enable checkboxes and download button-->
-<!--            document.querySelectorAll('.checkbox-group input').forEach(checkbox => {-->
-<!--                checkbox.disabled = false;-->
-<!--            });-->
-<!--            document.getElementById("paidDownloadButton").disabled = false;-->
-<!--        }-->
-<!--    });-->
-<!--</script>-->
-<!--<script>-->
-<!--    function downloadReports() {-->
-<!--        // Get all checked checkboxes-->
-<!--        const selectedReports = Array.from(document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked'))-->
-<!--            .map(checkbox => checkbox.value);-->
-
-<!--        // If no checkboxes are selected, alert the user-->
-<!--        if (selectedReports.length === 0) {-->
-<!--            alert("Please select at least one report.");-->
-<!--            return;-->
-<!--        }-->
-
-<!--        // Send data to the backend using Fetch API-->
-<!--        fetch('/generate-reports/', {-->
-<!--            method: 'POST',-->
-<!--            headers: {-->
-<!--                'Content-Type': 'application/json',-->
-<!--                'X-CSRFToken': getCSRFToken() // Include CSRF token for Django-->
-<!--            },-->
-<!--            body: JSON.stringify({ reports: selectedReports })-->
-<!--        })-->
-<!--            .then(response => response.json())-->
-<!--            .then(data => {-->
-<!--                if (data.success) {-->
-<!--                    alert('Reports are being prepared for download.');-->
-<!--                } else {-->
-<!--                    alert('Failed to process your request.');-->
-<!--                }-->
-<!--            })-->
-<!--            .catch(error => {-->
-<!--                console.error('Error:', error);-->
-<!--                alert('An error occurred. Please try again.');-->
-<!--            });-->
-<!--    }-->
-
-<!--    // Function to retrieve CSRF token from cookies-->
-<!--    function getCSRFToken() {-->
-<!--        const csrfToken = document.cookie-->
-<!--            .split('; ')-->
-<!--            .find(row => row.startsWith('csrftoken='))-->
-<!--            ?.split('=')[1];-->
-<!--        return csrfToken;-->
-<!--    }-->
-<!--</script>-->
 <script>
-    function generateFreeSample() {
-        fetch('/generate-reports/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': getCSRFToken()
-            },
-            body: new URLSearchParams({ sample: "true" })
-        })
-            .then(response => response.text())  // Expect plain text response
-            .then(message => {
-                if (message === "success") {
-                    console.log("Sample report generated successfully.");
-                    // Perform actions on success, e.g., update the UI or navigate
-                } else if (message === "fail") {
-                    console.log("Failed to generate the sample report.");
-                    // Handle failure case here
-                } else {
-                    console.log("An error occurred.");
-                    // Handle error case here
+    document.addEventListener("DOMContentLoaded", function() {
+        fetch("/check-subscription/")
+            .then(response => response.json())
+            .then(data => {
+                if (!data.is_active) {
+                    disableCheckBoxes();
                 }
             })
-            .catch(error => {
-                console.error("Error:", error);
-                // Handle fetch errors if necessary
-            });
+            .catch(error => console.error("Error fetching subscription status:", error));
+    });
+
+    function disableCheckBoxes() {
+        let checkboxes = document.querySelectorAll(".report-checkbox");
+        checkboxes.forEach(checkbox => {
+            checkbox.setAttribute("disabled", "true");
+        });
+
+        document.getElementById("paidDownloadButton").setAttribute("disabled", "true");
+
+        // Make payment button redirect to payment page
+        document.getElementById("payButton").addEventListener("click", function() {
+            window.location.href = "{% url 'payment_page' %}";
+        });
     }
-
-    function getCSRFToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]').value;
-    }
-
-    function submitSelectedReports(event) {
-        event.preventDefault(); // Prevent the form from submitting traditionally
-
-        // Collect all selected checkboxes
-        const selectedReports = Array.from(
-            document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked')
-        ).map(checkbox => checkbox.value);
-
-        // Check if any checkbox is selected
-        if (selectedReports.length === 0) {
-            // No checkboxes selected; handle accordingly (e.g., disable buttons or update DOM)
-            console.log("No reports selected.");
-            return;
-        }
-
-        // Send selected reports to the backend
-        fetch('/generate-reports/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': getCSRFToken()
-            },
-            body: new URLSearchParams({ report: selectedReports })
-        })
-            .then(response => response.text()) // Expect plain text response
-            .then(message => {
-                // Process the backend response
-                if (message === "success") {
-                    console.log("Reports generated successfully.");
-                    // Perform actions on success, e.g., update the UI or navigate
-                    document.getElementById("status").innerText = "Reports generated successfully.";
-                } else if (message === "fail") {
-                    console.log("Failed to generate reports.");
-                    // Handle failure case here (e.g., show a message on the page)
-                    document.getElementById("status").innerText = "Failed to generate reports.";
-                } else {
-                    console.log("An error occurred.");
-                    // Handle error case here
-                    document.getElementById("status").innerText = "An error occurred while generating reports.";
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                // Handle fetch errors if necessary
-                document.getElementById("status").innerText = "An unexpected error occurred.";
-            });
-    }
-
-    function getCSRFToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]').value;
-    }
-
 </script>
 
 {% endblock %}

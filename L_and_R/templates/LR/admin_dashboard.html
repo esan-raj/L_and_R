@@ -1,0 +1,25 @@
+{% extends 'LR/base.html' %}
+
+{% block content %}
+<h2>Pending Transactions</h2>
+<table>
+    <tr>
+        <th>User</th>
+        <th>Transaction ID</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+    {% for transaction in transactions %}
+    <tr>
+        <td>{{ transaction.user.username }}</td>
+        <td>{{ transaction.transaction_id }}</td>
+        <td>{{ transaction.amount }}</td>
+        <td>{{ transaction.status }}</td>
+        <td>
+            <a href="{% url 'verify_transaction' transaction.transaction_id %}">Verify</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

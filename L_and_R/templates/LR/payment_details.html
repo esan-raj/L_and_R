@@ -1,0 +1,150 @@
+{% extends 'LR/base.html' %}
+{% load static %}
+{% block title %}Payment Details{% endblock %}
+{% block content %}
+<div class="payment-container">
+
+    <!-- 🟢 Auto-Filled Biller Details Form -->
+    <h2>Complete Your Payment</h2>
+    <form method="POST" action="{% url 'submit_transaction' %}">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="full_name">Full Name:</label>
+            <input type="text" id="full_name" name="full_name" value="{{ user_data.full_name }}" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email ID:</label>
+            <input type="email" id="email" name="email" value="{{ user_data.email }}" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="phone">Phone Number:</label>
+            <input type="tel" id="phone" name="phone" value="{{ user_data.phone }}" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="address">Address:</label>
+            <textarea id="address" name="address" rows="3" readonly>{{ user_data.address }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="subscription">Select Subscription:</label>
+            <select id="subscription" name="subscription" required>
+                <option value="" disabled selected>Select an option</option>
+                <option value="499">Monthly - ₹499</option>
+                <option value="4999">Yearly - ₹4999</option>
+            </select>
+        </div>
+
+        <!-- 🟡 QR Code Payment Section -->
+        <div class="qr-section">
+            <h3>Scan & Pay</h3>
+            <p>Scan the QR code below to make the payment.</p>
+            <img src="{% static 'images/custom_upi_qr.png' %}" alt="Scan QR Code" class="qr-image">
+        </div>
+
+        <!-- 🔵 Checkbox to Enable Transaction Field & Button -->
+        <div class="checkbox-group">
+            <input type="checkbox" id="confirm_payment" onclick="toggleTransactionField()">
+            <label for="confirm_payment">I have completed the payment</label>
+        </div>
+
+        <!-- 🔴 Transaction ID Input Field (Initially Disabled) -->
+        <div class="form-group">
+            <label for="transaction_id">Transaction ID:</label>
+            <input type="text" id="transaction_id" name="transaction_id" disabled required>
+        </div>
+
+        <!-- 🟢 Submit Button (Initially Disabled) -->
+        <button type="submit" id="submit_button" class="btn submit-btn" disabled>Proceed</button>
+    </form>
+</div>
+
+<!-- ✅ JavaScript: Enable Transaction ID Field After Payment Confirmation -->
+<script>
+    function toggleTransactionField() {
+        let checkbox = document.getElementById("confirm_payment");
+        let transactionField = document.getElementById("transaction_id");
+        let submitButton = document.getElementById("submit_button");
+
+        transactionField.disabled = !checkbox.checked;
+        submitButton.disabled = !checkbox.checked;
+    }
+</script>
+
+
+<style>
+.payment-container {
+    max-width: 600px;
+    margin: calc(var(--header-height, 100px) + 20px) auto; /* Add header height dynamically */
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.qr-section {
+    text-align: center;
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.qr-image {
+    width: 200px;
+    margin-top: 10px;
+}
+
+.checkbox-group {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-group input {
+    margin-right: 10px;
+}
+
+.submit-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.submit-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.submit-btn:hover {
+    background-color: #218838;
+}
+</style>
+
+{% endblock %}

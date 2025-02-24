@@ -15,6 +15,7 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+print("1234")
 print(BASE_DIR)
 
 
@@ -33,6 +34,7 @@ ALLOWED_HOSTS = ['mediport.in','127.0.0.1']
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -166,3 +168,11 @@ AUTH_USER_MODEL = 'LR.AppUser'
 # #         },
 # #     },
 # # }
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "mediport80@gmail.com"  # Replace with your email
+EMAIL_HOST_PASSWORD = "med@2024"  # Replace with an app password
+
+

@@ -24,9 +24,18 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('claimpaid/', views.claimpaid, name='claimpaid'),
     path('claimpaiddata/', views.claim_paid_data, name='claimpaiddata'),
-    path('report-download-form/', views.reportdownloadform, name='reportdownloadform'),
+    path('reportdownloadform/', views.reportdownloadform, name='reportdownloadform'),
     path('report-download/', views.report_download, name='reportdownload'),
     path('generate-reports/', views.generate_reports, name='generate_reports'),
     path('serve-report/', views.serve_download_report, name='serve_download_report'),
+    path("contact/", views.contact_view, name="contact"),
+    path("payment/", views.payment_page, name="payment_page"),
+    path("submit_transaction/", views.submit_transaction, name="submit_transaction"),
+    path("verify_transaction/<str:transaction_id>/", views.verify_transaction, name="verify_transaction"),
+    path("check-subscription/",views.check_subscription, name="check_subscription"),
+    path("admin_dashboard/", views.admin_dashboard, name="admin_dashboard"),
 
 ]
+
+# Add this print statement to debug URL patterns
+# print("URL Patterns loaded:", urlpatterns)

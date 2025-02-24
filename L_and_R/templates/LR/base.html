@@ -11,7 +11,7 @@
     <title>{% block title %}{% endblock %}</title>
 
     <!-- Favicon -->
-    <link rel="shortcut icon" href="{% static 'images\logo\mediport icon.png' %}" type="image/x-icon">
+    <link rel="shortcut icon" href="{% static 'images\logo\mediport_icon.png' %}" type="image/x-icon">
 
     <!-- CSS Files -->
     <link rel="stylesheet" href="{% static 'css/animate-3.7.0.css' %}">
@@ -72,7 +72,7 @@
                             </ul>
                         </li>
                         {% endif %}
-                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="{% url 'contact' %}">Contact</a></li>
                     </ul>
                 </nav><!-- #nav-menu-container -->
                 </div>

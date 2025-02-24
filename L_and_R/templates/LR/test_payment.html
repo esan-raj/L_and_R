@@ -1,0 +1,79 @@
+{% extends 'LR/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Test Payment</h2>
+    <p>Amount: ₹{{ razorpay_amount|divisibleby:100 }}</p>
+    
+    <button id="rzp-button" class="btn payment-btn">Pay Now</button>
+    
+    <div id="payment-status" style="margin-top: 20px;"></div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+var options = {
+    "key": "{{ razorpay_merchant_key }}",
+    "amount": "{{ razorpay_amount }}",
+    "currency": "{{ razorpay_currency }}",
+    "name": "{{ razorpay_name }}",
+    "description": "{{ razorpay_description }}",
+    "order_id": "{{ razorpay_order_id }}",
+    "handler": function (response) {
+        // Handle the success callback
+        document.getElementById('payment-status').innerHTML = 
+            '<div class="alert alert-success">Payment successful!</div>';
+            
+        // Send verification request to backend
+        fetch('/test-callback/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(response)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'success') {
+                window.location.href = '{% url "reportdownloadform" %}?payment_status=success';
+            } else {
+                document.getElementById('payment-status').innerHTML = 
+                    '<div class="alert alert-danger">Payment verification failed!</div>';
+            }
+        });
+    },
+    "prefill": {
+        "name": "{{ user_name }}",
+        "email": "{{ user_email }}"
+    },
+    "theme": {
+        "color": "#3399cc"
+    }
+};
+
+var rzp1 = new Razorpay(options);
+document.getElementById('rzp-button').onclick = function(e){
+    rzp1.open();
+    e.preventDefault();
+}
+</script>
+
+<style>
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+</style>
+{% endblock %} 

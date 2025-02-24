@@ -1,13 +1,11 @@
-import zipfile
-from django.utils import timezone
 from sqlite3 import DatabaseError, IntegrityError
-from django.contrib.auth.hashers import make_password
+
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
-from django.views.decorators.csrf import csrf_exempt
 from .report import *
 from .scraping import *
 from django.contrib import messages
@@ -17,12 +15,18 @@ from django.http import FileResponse
 import os
 import io
 from django.contrib.auth import get_user_model
-from .models import AppUser
+from .models import *
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import logout as auth_logout
 from django.http import JsonResponse
 import json
 import requests
+from django.core.mail import send_mail
+from .forms import ContactForm
+from .forms import PaymentDetailsForm
+import time
+from datetime import timedelta
+from django.utils.timezone import now
 
 AppUser = get_user_model()
 
@@ -602,10 +606,23 @@ def refresh(request):
     else:
         # Return an error if the request method is not allowed
         return JsonResponse({"success": False, "error": "Invalid request method."}, status=405)
+
+def is_user_subscribed(user):
+    """Check if the user has an active subscription."""
+    return Subscription.objects.filter(user=user, is_active=True, end_date__gte=timezone.now()).exists()
 @login_required
 def reportdownloadform(request):
+    """Render the report download form only if the user has an active subscription."""
+    has_active_subscription = Subscription.objects.filter(
+        user=request.user, is_active=True, end_date__gte=now()
+    ).exists()
+    print(f"User: {request.user}, Active Subscription: {has_active_subscription}")  # Debugging print
+    return render(request, 'LR/reportdownloadform.html', {'has_active_subscription': has_active_subscription})
 
-    return render(request,'LR/reportdownloadform.html')
+def check_subscription(request):
+    user = request.user
+    is_active = Subscription.objects.filter(user=user, is_active=True).exists()
+    return JsonResponse({"is_active": is_active})
 @login_required
 def report_download(request):
     message = main(sample=True)
@@ -648,3 +665,126 @@ def serve_download_report(request):
         response = HttpResponse(zip_file.read(), content_type='application/zip')
         response['Content-Disposition'] = f'attachment; filename="{os.path.basename(zip_file_path)}"'
         return response
+
+def contact_view(request):
+    if request.method == "POST":
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            name = form.cleaned_data["name"]
+            email = form.cleaned_data["email"]
+            subject = form.cleaned_data["subject"]
+            message = form.cleaned_data["message"]
+
+            # Send email (optional)
+            send_mail(
+                subject=f"Contact Form Submission: {subject}",
+                message=f"Name: {name}\nEmail: {email}\n\n{message}",
+                from_email=email,
+                recipient_list=["admin@mediport.in"],  # Replace with your admin email
+                fail_silently=False,
+            )
+
+            messages.success(request, "Your message has been sent successfully!")
+            return redirect("contact")  # Redirect to avoid form resubmission
+
+    else:
+        form = ContactForm()
+
+    return render(request, "LR/contact.html", {"form": form})
+
+@login_required
+def payment_page(request):
+    user = request.user  # Get the logged-in user
+
+    # Pre-fill user details
+    user_data = {
+        'full_name': f"{user.first_name} {user.last_name}",
+        'email': user.email_address,
+        'phone': user.phone_number,
+        'address': user.address
+    }
+
+    return render(request, 'LR/payment_details.html', {'user_data': user_data})  # Create this template with QR code
+
+def submit_transaction(request):
+    if request.method == "POST":
+        transaction_id = request.POST.get("transaction_id")
+        amount = request.POST.get("subscription")
+
+        # Get auto-filled user details
+        customer_name = request.user.first_name + " " + request.user.last_name
+        customer_email = request.user.email_address
+        customer_phone = request.user.phone_number
+
+        if not transaction_id or not amount:
+            messages.error(request, "Transaction ID and Amount are required!")
+            return redirect("payment_page")
+
+        # Prevent duplicate transactions
+        if PaymentTransaction.objects.filter(transaction_id=transaction_id).exists():
+            messages.error(request, "Transaction ID already submitted!")
+            return redirect("payment_page")
+
+        # Create a new transaction record
+        PaymentTransaction.objects.create(
+            user=request.user,
+            transaction_id=transaction_id,
+            amount=amount,
+            status="Pending",
+            customer_name=customer_name,
+            customer_email=customer_email,
+            customer_phone=customer_phone
+        )
+
+        # ✅ Redirect to report download form with success message
+        messages.success(request, "Your request is successfully submitted. Waiting for the verification.")
+        return redirect("reportdownloadform")
+
+    return redirect("payment_page")
+
+
+@staff_member_required
+def verify_transaction(request, transaction_id):
+    """Admin verifies a payment and activates the user's subscription."""
+    try:
+        transaction = PaymentTransaction.objects.get(transaction_id=transaction_id)
+    except PaymentTransaction.DoesNotExist:
+        messages.error(request, "Transaction not found!")
+        return redirect("admin:index")  # Redirect to admin dashboard
+
+    if transaction.status == "Pending":
+        # ✅ Mark the transaction as Verified
+        transaction.status = "Verified"
+        transaction.save()
+
+        # ✅ Ensure subscription exists or create one
+        subscription, created = Subscription.objects.get_or_create(user=transaction.user)
+        print(f"Subscription created: {created} for user: {transaction.user.app_username}")
+
+        # ✅ Activate subscription based on payment amount
+        if float(transaction.amount) == 499.0:
+            subscription.subscription_type = "monthly"
+            subscription.activate_subscription(30)  # Activate for 30 days
+        elif float(transaction.amount) == 4999.0:
+            subscription.subscription_type = "yearly"
+            subscription.activate_subscription(365)  # Activate for 1 year
+        else:
+            messages.error(request, "Invalid subscription amount detected!")
+            return redirect("admin:index")
+
+        # ✅ Save the subscription
+        subscription.save()
+
+        # ✅ Debugging Output
+        print(f"Subscription activated: {subscription.is_active} | Start: {subscription.start_date} | End: {subscription.end_date}")
+
+        messages.success(request, f"Transaction verified and subscription activated for {transaction.user.app_username}!")
+    else:
+        messages.info(request, "Transaction is already verified or failed!")
+
+    return redirect("admin:index")
+@staff_member_required
+def admin_dashboard(request):
+    """Admin dashboard to view pending transactions."""
+    transactions = PaymentTransaction.objects.filter(status="Pending")
+    return render(request, "LR/admin_dashboard.html", {"transactions": transactions})

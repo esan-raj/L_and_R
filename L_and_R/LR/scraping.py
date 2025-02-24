@@ -46,7 +46,7 @@ def fetch_site_password(app_username):
 
 
 
-def initialize_driver():
+def  initialize_driver():
     download_dir = os.path.join(os.path.dirname(__file__), 'Downloaded_documents')
     base_dir = os.path.dirname(os.path.abspath(__file__))  # Get the directory of the current file
     if platform.system() == "Windows":

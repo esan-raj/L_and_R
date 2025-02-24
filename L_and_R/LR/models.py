@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
+from datetime import timedelta
 
 # Custom manager for AppUser
 class AppUserManager(BaseUserManager):
@@ -54,4 +55,64 @@ class DynamicExcelData(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.app_username
+        return str(self.uploaded_at)
+
+# Add new payment-related models below
+
+class PaymentTransaction(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+    transaction_id = models.CharField(max_length=100, unique=True)
+    order_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    # Remove this line if `currency` already exists
+    currency = models.CharField(max_length=10, default="INR")
+    status = models.CharField(
+        max_length=20,
+        choices=[('Pending', 'Pending'), ('Verified', 'Verified'), ('Failed', 'Failed')],
+        default='Pending'
+    )
+    timestamp = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)  # ✅ Add this field safely
+    payment_details = models.TextField(null=True, blank=True)
+    customer_name = models.CharField(max_length=100, null=True, blank=True)
+    customer_email = models.EmailField(null=True, blank=True)
+    customer_phone = models.CharField(max_length=15, null=True, blank=True)
+
+
+    def __str__(self):
+        return f"{self.user.app_username} - {self.transaction_id} - {self.status}"
+
+
+
+
+class Subscription(models.Model):
+    user = models.OneToOneField(AppUser, on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=False)
+    subscription_type = models.CharField(
+        max_length=20,
+        choices=[("monthly", "Monthly"), ("yearly", "Yearly")],
+        default="monthly"
+    )
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def activate_subscription(self, duration_days):
+        """Activate subscription for a given duration (e.g., 30 days for monthly)."""
+        self.is_active = True
+        self.start_date = timezone.now()
+        self.end_date = timezone.now() + timedelta(days=duration_days)
+        self.save()
+
+    def __str__(self):
+        return f"{self.user.app_username} - {self.subscription_type} - {'Active' if self.is_active else 'Inactive'}"
+
+
+class ReportDownloadLog(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+    report_name = models.CharField(max_length=255)
+    downloaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.app_username} - {self.report_name} - {self.downloaded_at}"
+

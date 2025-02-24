@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')  # Set the backend to Agg before importing pyplot
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -41,7 +43,8 @@ class DatabaseConnectionSingleton:
                 host=host,
                 user=user,
                 password=password,
-                database=database
+                database=database,
+                auth_plugin='mysql_native_password'
             )
             print("Database connection initialized.")
             return connection
@@ -68,6 +71,7 @@ class DatabaseConnectionSingleton:
 class DataProcessor:
     def __init__(self, connection):
         self.connection = connection
+        plt.switch_backend('Agg')  # Ensure we're using Agg backend
 
     def fetch_data(self, query):
         """
